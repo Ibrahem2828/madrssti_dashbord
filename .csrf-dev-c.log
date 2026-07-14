@@ -1,0 +1,21 @@
+
+> madrasti-dashboard@4.0.0 dev
+> next dev --hostname localhost --port 3000
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3000
+  - Network:      http://127.0.0.1:3000
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 5.9s
+ ○ Compiling /api/auth/csrf ...
+ ✓ Compiled /api/auth/csrf in 1531ms (71 modules)
+ GET /api/auth/csrf 200 in 1870ms
+ ✓ Compiled /api/auth/central/login in 432ms (77 modules)
+ POST /api/auth/central/login 400 in 693ms
+ ✓ Compiled /api/auth/school/login in 288ms (79 modules)
+ POST /api/auth/school/login 400 in 549ms
+ GET /api/auth/csrf 200 in 82ms
+ POST /api/auth/central/login 503 in 10660ms
+ POST /api/auth/school/login 503 in 10642ms

@@ -1,0 +1,2 @@
+[backend:login] {"portal":"central","endpoint":"/central/auth/login","status":504,"code":"BACKEND_TIMEOUT","errorClass":"TypeError","nestedErrorCode":"UND_ERR_CONNECT_TIMEOUT","stage":"request","requestId":"8d0b91c4-12e2-4667-85d0-c31f5bf53ef1"}
+[backend:login] {"portal":"school","endpoint":"/auth/login","status":504,"code":"BACKEND_TIMEOUT","errorClass":"TypeError","nestedErrorCode":"UND_ERR_CONNECT_TIMEOUT","stage":"request","requestId":"4e09a047-ef6b-4fca-8b8d-28c55494a474"}

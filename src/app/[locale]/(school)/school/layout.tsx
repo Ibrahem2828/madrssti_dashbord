@@ -1,0 +1,1 @@
+import {PortalShell} from "@/components/layout/portal-shell"; import {schoolNavigation} from "@/config/navigation.school"; export default function Layout({children}:{children:React.ReactNode}){return <PortalShell portal="school" navigation={schoolNavigation}>{children}</PortalShell>}

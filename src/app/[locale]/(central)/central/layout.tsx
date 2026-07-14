@@ -1,0 +1,1 @@
+import {PortalShell} from "@/components/layout/portal-shell"; import {centralNavigation} from "@/config/navigation.central"; export default function Layout({children}:{children:React.ReactNode}){return <PortalShell portal="central" navigation={centralNavigation}>{children}</PortalShell>}

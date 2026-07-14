@@ -1,0 +1,1 @@
+import {getTranslations} from "next-intl/server"; export default async function SessionExpired(){const t=await getTranslations("errors");return <main className="grid min-h-screen place-items-center p-6"><section className="rounded-lg border bg-card p-8"><h1 className="text-xl font-bold">{t("sessionExpired")}</h1></section></main>}

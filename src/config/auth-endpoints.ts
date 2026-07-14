@@ -1,0 +1,1 @@
+export const AUTH_ENDPOINTS = {school: {login: "/auth/login", me: "/me", schools: "/me/schools", switchSchool: "/me/switch-school", refresh: "/auth/refresh", logout: "/auth/logout"}, central: {login: "/central/auth/login", me: "/central/me", refresh: "/central/auth/refresh", logout: "/central/auth/logout"}} as const;

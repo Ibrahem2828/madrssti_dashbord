@@ -1,0 +1,1 @@
+import {proxyGateway} from "@/lib/api/gateway"; import {NextRequest} from "next/server"; const handler=(r:NextRequest,{params}:{params:{path:string[]}})=>proxyGateway(r,"central",params.path); export {handler as GET,handler as POST,handler as PUT,handler as PATCH,handler as DELETE};

@@ -1,0 +1,1118 @@
+{
+  "metadata": {
+    "generated_at": "2026-02-02T03:43:21.214538Z",
+    "base_url": "https://mishkat-production.up.railway.app",
+    "version": "v1",
+    "scope": "central_it_module",
+    "total_endpoints": 22
+  },
+  "endpoints": [
+    {
+      "tag": "central_auth",
+      "name": "Central login",
+      "method": "POST",
+      "path": "/api/v1/central/auth/login",
+      "full_url": "https://mishkat-production.up.railway.app/api/v1/central/auth/login",
+      "auth_required": false,
+      "permissions_required": [],
+      "headers": {
+        "Authorization": "Bearer <access_token>",
+        "X-School-ID": "(not allowed for central)"
+      },
+      "query": [],
+      "request_body": {
+        "identifier": "email",
+        "password": ""
+      },
+      "responses": {
+        "200": {
+          "example": {
+            "success": true,
+            "data": {},
+            "request_id": "<uuid>"
+          }
+        },
+        "400": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "?????? ??? ?????"
+            },
+            "request_id": "<uuid>"
+          }
+        },
+        "403": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "CENTRAL_FORBIDDEN_ROUTE",
+              "message": "Central token cannot access school routes"
+            },
+            "request_id": "<uuid>"
+          }
+        }
+      },
+      "notes": "Central IT login only"
+    },
+    {
+      "tag": "central_auth",
+      "name": "Central refresh",
+      "method": "POST",
+      "path": "/api/v1/central/auth/refresh",
+      "full_url": "https://mishkat-production.up.railway.app/api/v1/central/auth/refresh",
+      "auth_required": true,
+      "permissions_required": [],
+      "headers": {
+        "Authorization": "Bearer <access_token>",
+        "X-School-ID": "(not allowed for central)"
+      },
+      "query": [],
+      "request_body": {
+        "refresh": ""
+      },
+      "responses": {
+        "200": {
+          "example": {
+            "success": true,
+            "data": {},
+            "request_id": "<uuid>"
+          }
+        },
+        "400": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "?????? ??? ?????"
+            },
+            "request_id": "<uuid>"
+          }
+        },
+        "403": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "CENTRAL_FORBIDDEN_ROUTE",
+              "message": "Central token cannot access school routes"
+            },
+            "request_id": "<uuid>"
+          }
+        }
+      },
+      "notes": ""
+    },
+    {
+      "tag": "central_auth",
+      "name": "Central logout",
+      "method": "POST",
+      "path": "/api/v1/central/auth/logout",
+      "full_url": "https://mishkat-production.up.railway.app/api/v1/central/auth/logout",
+      "auth_required": true,
+      "permissions_required": [],
+      "headers": {
+        "Authorization": "Bearer <access_token>",
+        "X-School-ID": "(not allowed for central)"
+      },
+      "query": [],
+      "request_body": {
+        "refresh": ""
+      },
+      "responses": {
+        "200": {
+          "example": {
+            "success": true,
+            "data": {},
+            "request_id": "<uuid>"
+          }
+        },
+        "400": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "?????? ??? ?????"
+            },
+            "request_id": "<uuid>"
+          }
+        },
+        "403": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "CENTRAL_FORBIDDEN_ROUTE",
+              "message": "Central token cannot access school routes"
+            },
+            "request_id": "<uuid>"
+          }
+        }
+      },
+      "notes": ""
+    },
+    {
+      "tag": "central_auth",
+      "name": "Central me",
+      "method": "GET",
+      "path": "/api/v1/central/me",
+      "full_url": "https://mishkat-production.up.railway.app/api/v1/central/me",
+      "auth_required": true,
+      "permissions_required": [
+        "CENTRAL_ME_READ"
+      ],
+      "headers": {
+        "Authorization": "Bearer <access_token>",
+        "X-School-ID": "(not allowed for central)"
+      },
+      "query": [],
+      "request_body": null,
+      "responses": {
+        "200": {
+          "example": {
+            "success": true,
+            "data": {},
+            "request_id": "<uuid>"
+          }
+        },
+        "400": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "?????? ??? ?????"
+            },
+            "request_id": "<uuid>"
+          }
+        },
+        "403": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "CENTRAL_FORBIDDEN_ROUTE",
+              "message": "Central token cannot access school routes"
+            },
+            "request_id": "<uuid>"
+          }
+        }
+      },
+      "notes": "Returns central session context"
+    },
+    {
+      "tag": "central_schools",
+      "name": "List schools",
+      "method": "GET",
+      "path": "/api/v1/central/schools",
+      "full_url": "https://mishkat-production.up.railway.app/api/v1/central/schools",
+      "auth_required": true,
+      "permissions_required": [
+        "CENTRAL_SCHOOLS_READ"
+      ],
+      "headers": {
+        "Authorization": "Bearer <access_token>",
+        "X-School-ID": "(not allowed for central)"
+      },
+      "query": [
+        {
+          "name": "status",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "search",
+          "type": "string",
+          "required": false
+        },
+        {
+          "name": "page",
+          "type": "number",
+          "required": false
+        }
+      ],
+      "request_body": null,
+      "responses": {
+        "200": {
+          "example": {
+            "success": true,
+            "data": {},
+            "request_id": "<uuid>"
+          }
+        },
+        "400": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "?????? ??? ?????"
+            },
+            "request_id": "<uuid>"
+          }
+        },
+        "403": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "CENTRAL_FORBIDDEN_ROUTE",
+              "message": "Central token cannot access school routes"
+            },
+            "request_id": "<uuid>"
+          }
+        }
+      },
+      "notes": ""
+    },
+    {
+      "tag": "central_schools",
+      "name": "Create school",
+      "method": "POST",
+      "path": "/api/v1/central/schools",
+      "full_url": "https://mishkat-production.up.railway.app/api/v1/central/schools",
+      "auth_required": true,
+      "permissions_required": [
+        "CENTRAL_SCHOOLS_CREATE"
+      ],
+      "headers": {
+        "Authorization": "Bearer <access_token>",
+        "X-School-ID": "(not allowed for central)"
+      },
+      "query": [],
+      "request_body": {
+        "name": "",
+        "code": "",
+        "phone": "",
+        "address": ""
+      },
+      "responses": {
+        "200": {
+          "example": {
+            "success": true,
+            "data": {},
+            "request_id": "<uuid>"
+          }
+        },
+        "400": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "?????? ??? ?????"
+            },
+            "request_id": "<uuid>"
+          }
+        },
+        "403": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "CENTRAL_FORBIDDEN_ROUTE",
+              "message": "Central token cannot access school routes"
+            },
+            "request_id": "<uuid>"
+          }
+        }
+      },
+      "notes": ""
+    },
+    {
+      "tag": "central_schools",
+      "name": "Get school",
+      "method": "GET",
+      "path": "/api/v1/central/schools/{id}",
+      "full_url": "https://mishkat-production.up.railway.app/api/v1/central/schools/{id}",
+      "auth_required": true,
+      "permissions_required": [
+        "CENTRAL_SCHOOLS_READ"
+      ],
+      "headers": {
+        "Authorization": "Bearer <access_token>",
+        "X-School-ID": "(not allowed for central)"
+      },
+      "query": [],
+      "request_body": null,
+      "responses": {
+        "200": {
+          "example": {
+            "success": true,
+            "data": {},
+            "request_id": "<uuid>"
+          }
+        },
+        "400": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "?????? ??? ?????"
+            },
+            "request_id": "<uuid>"
+          }
+        },
+        "403": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "CENTRAL_FORBIDDEN_ROUTE",
+              "message": "Central token cannot access school routes"
+            },
+            "request_id": "<uuid>"
+          }
+        }
+      },
+      "notes": ""
+    },
+    {
+      "tag": "central_schools",
+      "name": "Update school",
+      "method": "PATCH",
+      "path": "/api/v1/central/schools/{id}",
+      "full_url": "https://mishkat-production.up.railway.app/api/v1/central/schools/{id}",
+      "auth_required": true,
+      "permissions_required": [
+        "CENTRAL_SCHOOLS_UPDATE"
+      ],
+      "headers": {
+        "Authorization": "Bearer <access_token>",
+        "X-School-ID": "(not allowed for central)"
+      },
+      "query": [],
+      "request_body": {
+        "name": "",
+        "phone": ""
+      },
+      "responses": {
+        "200": {
+          "example": {
+            "success": true,
+            "data": {},
+            "request_id": "<uuid>"
+          }
+        },
+        "400": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "?????? ??? ?????"
+            },
+            "request_id": "<uuid>"
+          }
+        },
+        "403": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "CENTRAL_FORBIDDEN_ROUTE",
+              "message": "Central token cannot access school routes"
+            },
+            "request_id": "<uuid>"
+          }
+        }
+      },
+      "notes": ""
+    },
+    {
+      "tag": "central_schools",
+      "name": "Activate school",
+      "method": "POST",
+      "path": "/api/v1/central/schools/{id}/activate",
+      "full_url": "https://mishkat-production.up.railway.app/api/v1/central/schools/{id}/activate",
+      "auth_required": true,
+      "permissions_required": [
+        "CENTRAL_SCHOOLS_ACTIVATE_DEACTIVATE"
+      ],
+      "headers": {
+        "Authorization": "Bearer <access_token>",
+        "X-School-ID": "(not allowed for central)"
+      },
+      "query": [],
+      "request_body": null,
+      "responses": {
+        "200": {
+          "example": {
+            "success": true,
+            "data": {},
+            "request_id": "<uuid>"
+          }
+        },
+        "400": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "?????? ??? ?????"
+            },
+            "request_id": "<uuid>"
+          }
+        },
+        "403": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "CENTRAL_FORBIDDEN_ROUTE",
+              "message": "Central token cannot access school routes"
+            },
+            "request_id": "<uuid>"
+          }
+        }
+      },
+      "notes": ""
+    },
+    {
+      "tag": "central_schools",
+      "name": "Deactivate school",
+      "method": "POST",
+      "path": "/api/v1/central/schools/{id}/deactivate",
+      "full_url": "https://mishkat-production.up.railway.app/api/v1/central/schools/{id}/deactivate",
+      "auth_required": true,
+      "permissions_required": [
+        "CENTRAL_SCHOOLS_ACTIVATE_DEACTIVATE"
+      ],
+      "headers": {
+        "Authorization": "Bearer <access_token>",
+        "X-School-ID": "(not allowed for central)"
+      },
+      "query": [],
+      "request_body": null,
+      "responses": {
+        "200": {
+          "example": {
+            "success": true,
+            "data": {},
+            "request_id": "<uuid>"
+          }
+        },
+        "400": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "?????? ??? ?????"
+            },
+            "request_id": "<uuid>"
+          }
+        },
+        "403": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "CENTRAL_FORBIDDEN_ROUTE",
+              "message": "Central token cannot access school routes"
+            },
+            "request_id": "<uuid>"
+          }
+        }
+      },
+      "notes": ""
+    },
+    {
+      "tag": "central_admin",
+      "name": "School admin status",
+      "method": "GET",
+      "path": "/api/v1/central/schools/{id}/admin",
+      "full_url": "https://mishkat-production.up.railway.app/api/v1/central/schools/{id}/admin",
+      "auth_required": true,
+      "permissions_required": [
+        "CENTRAL_SCHOOL_ADMIN_READ"
+      ],
+      "headers": {
+        "Authorization": "Bearer <access_token>",
+        "X-School-ID": "(not allowed for central)"
+      },
+      "query": [],
+      "request_body": null,
+      "responses": {
+        "200": {
+          "example": {
+            "success": true,
+            "data": {},
+            "request_id": "<uuid>"
+          }
+        },
+        "400": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "?????? ??? ?????"
+            },
+            "request_id": "<uuid>"
+          }
+        },
+        "403": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "CENTRAL_FORBIDDEN_ROUTE",
+              "message": "Central token cannot access school routes"
+            },
+            "request_id": "<uuid>"
+          }
+        }
+      },
+      "notes": ""
+    },
+    {
+      "tag": "central_admin",
+      "name": "Create school admin",
+      "method": "POST",
+      "path": "/api/v1/central/schools/{id}/create-admin",
+      "full_url": "https://mishkat-production.up.railway.app/api/v1/central/schools/{id}/create-admin",
+      "auth_required": true,
+      "permissions_required": [
+        "CENTRAL_SCHOOL_ADMIN_CREATE"
+      ],
+      "headers": {
+        "Authorization": "Bearer <access_token>",
+        "X-School-ID": "(not allowed for central)"
+      },
+      "query": [],
+      "request_body": {
+        "full_name": "",
+        "email": "",
+        "phone": "",
+        "temp_password": ""
+      },
+      "responses": {
+        "200": {
+          "example": {
+            "success": true,
+            "data": {},
+            "request_id": "<uuid>"
+          }
+        },
+        "400": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "?????? ??? ?????"
+            },
+            "request_id": "<uuid>"
+          }
+        },
+        "403": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "CENTRAL_FORBIDDEN_ROUTE",
+              "message": "Central token cannot access school routes"
+            },
+            "request_id": "<uuid>"
+          }
+        }
+      },
+      "notes": ""
+    },
+    {
+      "tag": "central_admin",
+      "name": "Reset school admin password",
+      "method": "POST",
+      "path": "/api/v1/central/schools/{id}/reset-admin-password",
+      "full_url": "https://mishkat-production.up.railway.app/api/v1/central/schools/{id}/reset-admin-password",
+      "auth_required": true,
+      "permissions_required": [
+        "CENTRAL_SCHOOL_ADMIN_RESET_PASSWORD"
+      ],
+      "headers": {
+        "Authorization": "Bearer <access_token>",
+        "X-School-ID": "(not allowed for central)"
+      },
+      "query": [],
+      "request_body": {
+        "new_temp_password": ""
+      },
+      "responses": {
+        "200": {
+          "example": {
+            "success": true,
+            "data": {},
+            "request_id": "<uuid>"
+          }
+        },
+        "400": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "?????? ??? ?????"
+            },
+            "request_id": "<uuid>"
+          }
+        },
+        "403": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "CENTRAL_FORBIDDEN_ROUTE",
+              "message": "Central token cannot access school routes"
+            },
+            "request_id": "<uuid>"
+          }
+        }
+      },
+      "notes": ""
+    },
+    {
+      "tag": "central_dashboard",
+      "name": "Overview KPIs",
+      "method": "GET",
+      "path": "/api/v1/central/dashboard/overview",
+      "full_url": "https://mishkat-production.up.railway.app/api/v1/central/dashboard/overview",
+      "auth_required": true,
+      "permissions_required": [
+        "CENTRAL_DASHBOARD_VIEW"
+      ],
+      "headers": {
+        "Authorization": "Bearer <access_token>",
+        "X-School-ID": "(not allowed for central)"
+      },
+      "query": [],
+      "request_body": null,
+      "responses": {
+        "200": {
+          "example": {
+            "success": true,
+            "data": {},
+            "request_id": "<uuid>"
+          }
+        },
+        "400": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "?????? ??? ?????"
+            },
+            "request_id": "<uuid>"
+          }
+        },
+        "403": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "CENTRAL_FORBIDDEN_ROUTE",
+              "message": "Central token cannot access school routes"
+            },
+            "request_id": "<uuid>"
+          }
+        }
+      },
+      "notes": ""
+    },
+    {
+      "tag": "central_dashboard",
+      "name": "Schools health",
+      "method": "GET",
+      "path": "/api/v1/central/dashboard/schools-health",
+      "full_url": "https://mishkat-production.up.railway.app/api/v1/central/dashboard/schools-health",
+      "auth_required": true,
+      "permissions_required": [
+        "CENTRAL_SCHOOLS_HEALTH_VIEW"
+      ],
+      "headers": {
+        "Authorization": "Bearer <access_token>",
+        "X-School-ID": "(not allowed for central)"
+      },
+      "query": [],
+      "request_body": null,
+      "responses": {
+        "200": {
+          "example": {
+            "success": true,
+            "data": {},
+            "request_id": "<uuid>"
+          }
+        },
+        "400": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "?????? ??? ?????"
+            },
+            "request_id": "<uuid>"
+          }
+        },
+        "403": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "CENTRAL_FORBIDDEN_ROUTE",
+              "message": "Central token cannot access school routes"
+            },
+            "request_id": "<uuid>"
+          }
+        }
+      },
+      "notes": ""
+    },
+    {
+      "tag": "central_tickets",
+      "name": "List tickets",
+      "method": "GET",
+      "path": "/api/v1/central/tickets",
+      "full_url": "https://mishkat-production.up.railway.app/api/v1/central/tickets",
+      "auth_required": true,
+      "permissions_required": [
+        "CENTRAL_TICKETS_VIEW"
+      ],
+      "headers": {
+        "Authorization": "Bearer <access_token>",
+        "X-School-ID": "(not allowed for central)"
+      },
+      "query": [
+        {
+          "name": "status",
+          "type": "string"
+        },
+        {
+          "name": "school_id",
+          "type": "uuid"
+        }
+      ],
+      "request_body": null,
+      "responses": {
+        "200": {
+          "example": {
+            "success": true,
+            "data": {},
+            "request_id": "<uuid>"
+          }
+        },
+        "400": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "?????? ??? ?????"
+            },
+            "request_id": "<uuid>"
+          }
+        },
+        "403": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "CENTRAL_FORBIDDEN_ROUTE",
+              "message": "Central token cannot access school routes"
+            },
+            "request_id": "<uuid>"
+          }
+        }
+      },
+      "notes": ""
+    },
+    {
+      "tag": "central_tickets",
+      "name": "Ticket details",
+      "method": "GET",
+      "path": "/api/v1/central/tickets/{id}",
+      "full_url": "https://mishkat-production.up.railway.app/api/v1/central/tickets/{id}",
+      "auth_required": true,
+      "permissions_required": [
+        "CENTRAL_TICKETS_VIEW"
+      ],
+      "headers": {
+        "Authorization": "Bearer <access_token>",
+        "X-School-ID": "(not allowed for central)"
+      },
+      "query": [],
+      "request_body": null,
+      "responses": {
+        "200": {
+          "example": {
+            "success": true,
+            "data": {},
+            "request_id": "<uuid>"
+          }
+        },
+        "400": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "?????? ??? ?????"
+            },
+            "request_id": "<uuid>"
+          }
+        },
+        "403": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "CENTRAL_FORBIDDEN_ROUTE",
+              "message": "Central token cannot access school routes"
+            },
+            "request_id": "<uuid>"
+          }
+        }
+      },
+      "notes": ""
+    },
+    {
+      "tag": "central_tickets",
+      "name": "Assign ticket",
+      "method": "PATCH",
+      "path": "/api/v1/central/tickets/{id}/assign",
+      "full_url": "https://mishkat-production.up.railway.app/api/v1/central/tickets/{id}/assign",
+      "auth_required": true,
+      "permissions_required": [
+        "CENTRAL_TICKETS_ASSIGN"
+      ],
+      "headers": {
+        "Authorization": "Bearer <access_token>",
+        "X-School-ID": "(not allowed for central)"
+      },
+      "query": [],
+      "request_body": {
+        "assigned_to": "uuid"
+      },
+      "responses": {
+        "200": {
+          "example": {
+            "success": true,
+            "data": {},
+            "request_id": "<uuid>"
+          }
+        },
+        "400": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "?????? ??? ?????"
+            },
+            "request_id": "<uuid>"
+          }
+        },
+        "403": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "CENTRAL_FORBIDDEN_ROUTE",
+              "message": "Central token cannot access school routes"
+            },
+            "request_id": "<uuid>"
+          }
+        }
+      },
+      "notes": ""
+    },
+    {
+      "tag": "central_tickets",
+      "name": "Close ticket",
+      "method": "PATCH",
+      "path": "/api/v1/central/tickets/{id}/close",
+      "full_url": "https://mishkat-production.up.railway.app/api/v1/central/tickets/{id}/close",
+      "auth_required": true,
+      "permissions_required": [
+        "CENTRAL_TICKETS_CLOSE"
+      ],
+      "headers": {
+        "Authorization": "Bearer <access_token>",
+        "X-School-ID": "(not allowed for central)"
+      },
+      "query": [],
+      "request_body": null,
+      "responses": {
+        "200": {
+          "example": {
+            "success": true,
+            "data": {},
+            "request_id": "<uuid>"
+          }
+        },
+        "400": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "?????? ??? ?????"
+            },
+            "request_id": "<uuid>"
+          }
+        },
+        "403": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "CENTRAL_FORBIDDEN_ROUTE",
+              "message": "Central token cannot access school routes"
+            },
+            "request_id": "<uuid>"
+          }
+        }
+      },
+      "notes": ""
+    },
+    {
+      "tag": "central_audit",
+      "name": "Audit logs",
+      "method": "GET",
+      "path": "/api/v1/central/audit",
+      "full_url": "https://mishkat-production.up.railway.app/api/v1/central/audit",
+      "auth_required": true,
+      "permissions_required": [
+        "CENTRAL_AUDIT_VIEW"
+      ],
+      "headers": {
+        "Authorization": "Bearer <access_token>",
+        "X-School-ID": "(not allowed for central)"
+      },
+      "query": [
+        {
+          "name": "school_id",
+          "type": "uuid"
+        },
+        {
+          "name": "actor_id",
+          "type": "uuid"
+        },
+        {
+          "name": "action",
+          "type": "string"
+        },
+        {
+          "name": "from",
+          "type": "date"
+        },
+        {
+          "name": "to",
+          "type": "date"
+        },
+        {
+          "name": "page",
+          "type": "number"
+        }
+      ],
+      "request_body": null,
+      "responses": {
+        "200": {
+          "example": {
+            "success": true,
+            "data": {},
+            "request_id": "<uuid>"
+          }
+        },
+        "400": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "?????? ??? ?????"
+            },
+            "request_id": "<uuid>"
+          }
+        },
+        "403": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "CENTRAL_FORBIDDEN_ROUTE",
+              "message": "Central token cannot access school routes"
+            },
+            "request_id": "<uuid>"
+          }
+        }
+      },
+      "notes": ""
+    },
+    {
+      "tag": "central_policies",
+      "name": "List policies",
+      "method": "GET",
+      "path": "/api/v1/central/policies",
+      "full_url": "https://mishkat-production.up.railway.app/api/v1/central/policies",
+      "auth_required": true,
+      "permissions_required": [
+        "CENTRAL_POLICIES_READ"
+      ],
+      "headers": {
+        "Authorization": "Bearer <access_token>",
+        "X-School-ID": "(not allowed for central)"
+      },
+      "query": [],
+      "request_body": null,
+      "responses": {
+        "200": {
+          "example": {
+            "success": true,
+            "data": {},
+            "request_id": "<uuid>"
+          }
+        },
+        "400": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "?????? ??? ?????"
+            },
+            "request_id": "<uuid>"
+          }
+        },
+        "403": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "CENTRAL_FORBIDDEN_ROUTE",
+              "message": "Central token cannot access school routes"
+            },
+            "request_id": "<uuid>"
+          }
+        }
+      },
+      "notes": ""
+    },
+    {
+      "tag": "central_policies",
+      "name": "Update policies",
+      "method": "PATCH",
+      "path": "/api/v1/central/policies",
+      "full_url": "https://mishkat-production.up.railway.app/api/v1/central/policies",
+      "auth_required": true,
+      "permissions_required": [
+        "CENTRAL_POLICIES_UPDATE"
+      ],
+      "headers": {
+        "Authorization": "Bearer <access_token>",
+        "X-School-ID": "(not allowed for central)"
+      },
+      "query": [],
+      "request_body": {
+        "QR_YEAR_POLICY": {
+          "starts_at": "",
+          "ends_at": ""
+        }
+      },
+      "responses": {
+        "200": {
+          "example": {
+            "success": true,
+            "data": {},
+            "request_id": "<uuid>"
+          }
+        },
+        "400": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "VALIDATION_ERROR",
+              "message": "?????? ??? ?????"
+            },
+            "request_id": "<uuid>"
+          }
+        },
+        "403": {
+          "example": {
+            "success": false,
+            "error": {
+              "code": "CENTRAL_FORBIDDEN_ROUTE",
+              "message": "Central token cannot access school routes"
+            },
+            "request_id": "<uuid>"
+          }
+        }
+      },
+      "notes": ""
+    }
+  ]
+}

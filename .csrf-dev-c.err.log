@@ -1,0 +1,2 @@
+[backend:login] {"portal":"central","endpoint":"/central/auth/login","status":503,"code":"BACKEND_UNAVAILABLE","requestId":"3a698daf-842c-4f30-9865-e5578c9c6e13"}
+[backend:login] {"portal":"school","endpoint":"/auth/login","status":503,"code":"BACKEND_UNAVAILABLE","requestId":"e7e5cf66-99f9-4ff9-8010-959b0ae7269b"}

@@ -1,0 +1,1886 @@
+{
+  "contract_name": "admin_dashboard_api_contract",
+  "project": {
+    "name": "Ù…Ø¯Ø±Ø³ØªÙŠ",
+    "backend": "Django REST API",
+    "version": "v1"
+  },
+  "metadata": {
+    "generated_for": "ADMIN_DASHBOARD",
+    "generated_at": "2026-07-04",
+    "base_path": "/api/v1",
+    "status": "dashboard contract",
+    "notes": [
+      "All school-admin endpoints are school-scoped.",
+      "Dashboard clients should send X-School-ID when the authenticated user has more than one school membership.",
+      "Existing endpoints are included as implemented routes; document/correspondence endpoints are the target dashboard contract for the new administrative archive module."
+    ]
+  },
+  "standard_headers": {
+    "Authorization": {
+      "required": true,
+      "example": "Bearer <access_token>",
+      "description": "JWT access token returned by login."
+    },
+    "X-School-ID": {
+      "required": "when user has multiple schools",
+      "example": "018f7bb4-3d2f-7c94-9a7a-16a2f84a91c1",
+      "description": "School context. Defaults to primary active membership when omitted."
+    },
+    "X-Request-ID": {
+      "required": false,
+      "example": "018f7bb4-4c1a-7dd0-bf3c-f14d3405c818",
+      "description": "Client supplied tracing id. Server may also generate one."
+    },
+    "Idempotency-Key": {
+      "required": "for sensitive POST/PATCH actions marked idempotent",
+      "example": "018f7bb4-6898-7b95-8f7a-2535f23f616f",
+      "description": "Used for safe retries of state-changing sensitive operations."
+    }
+  },
+  "response_envelope": {
+    "success": {
+      "shape": {
+        "success": true,
+        "data": {}
+      },
+      "notes": "If a legacy endpoint currently returns raw DRF data, dashboard should normalize through the API client until the endpoint is migrated to the unified envelope."
+    },
+    "paginated": {
+      "shape": {
+        "success": true,
+        "data": {
+          "count": 124,
+          "next": "/api/v1/admin/documents?page=3",
+          "previous": "/api/v1/admin/documents?page=1",
+          "results": []
+        }
+      }
+    },
+    "error": {
+      "shape": {
+        "success": false,
+        "error": {
+          "code": "VALIDATION_ERROR",
+          "message": "Validation failed.",
+          "field_errors": {
+            "title": [
+              "This field is required."
+            ]
+          }
+        },
+        "request_id": "018f7bb4-8ea1-7aa4-932a-cda22490e889"
+      }
+    }
+  },
+  "common_error_codes": [
+    "AUTHENTICATION_REQUIRED",
+    "TOKEN_EXPIRED",
+    "PERMISSION_DENIED",
+    "NO_SCHOOL_CONTEXT",
+    "SCHOOL_NOT_FOUND",
+    "VALIDATION_ERROR",
+    "NOT_FOUND",
+    "CONFLICT",
+    "IDEMPOTENCY_KEY_REQUIRED",
+    "RATE_LIMITED",
+    "UNSUPPORTED_MEDIA_TYPE",
+    "FILE_TOO_LARGE",
+    "SERVER_ERROR"
+  ],
+  "dashboard_pages": [
+    {
+      "page": "Login",
+      "primary_endpoints": [
+        "POST /api/v1/auth/login",
+        "POST /api/v1/auth/refresh",
+        "POST /api/v1/auth/logout"
+      ]
+    },
+    {
+      "page": "Overview",
+      "primary_endpoints": [
+        "GET /api/v1/me",
+        "GET /api/v1/me/schools",
+        "GET /api/v1/admin/reports/overview",
+        "GET /api/v1/dashboard/kpis",
+        "GET /api/v1/admin/documents/overview"
+      ]
+    },
+    {
+      "page": "Users and RBAC",
+      "primary_endpoints": [
+        "GET /api/v1/admin/users",
+        "POST /api/v1/admin/users",
+        "PATCH /api/v1/admin/users/{id}",
+        "GET /api/v1/admin/roles",
+        "GET /api/v1/admin/permissions",
+        "GET /api/v1/admin/users/{id}/effective-permissions",
+        "POST /api/v1/admin/users/{id}/roles",
+        "POST /api/v1/admin/users/{id}/permissions/grant",
+        "POST /api/v1/admin/users/{id}/permissions/revoke"
+      ]
+    },
+    {
+      "page": "Academic Setup",
+      "primary_endpoints": [
+        "GET /api/v1/admin/academic-years",
+        "POST /api/v1/admin/academic-years",
+        "PATCH /api/v1/admin/academic-years/{id}",
+        "GET /api/v1/grades",
+        "GET /api/v1/classrooms",
+        "GET /api/v1/subjects"
+      ]
+    },
+    {
+      "page": "Attendance and QR",
+      "primary_endpoints": [
+        "GET /api/v1/admin/attendance/records",
+        "POST /api/v1/admin/attendance/records/manual",
+        "PATCH /api/v1/admin/attendance/records/{id}",
+        "GET /api/v1/admin/excuses",
+        "POST /api/v1/admin/excuses/{id}/approve",
+        "POST /api/v1/admin/excuses/{id}/reject",
+        "GET /api/v1/admin/qr/users"
+      ]
+    },
+    {
+      "page": "Documents",
+      "primary_endpoints": [
+        "GET /api/v1/admin/documents/overview",
+        "GET /api/v1/admin/documents",
+        "POST /api/v1/admin/documents",
+        "GET /api/v1/admin/documents/{id}",
+        "PATCH /api/v1/admin/documents/{id}",
+        "DELETE /api/v1/admin/documents/{id}"
+      ]
+    },
+    {
+      "page": "Document Details",
+      "primary_endpoints": [
+        "GET /api/v1/admin/documents/{id}",
+        "GET /api/v1/admin/documents/{id}/attachments",
+        "POST /api/v1/admin/documents/{id}/attachments",
+        "POST /api/v1/admin/documents/{id}/link",
+        "POST /api/v1/admin/documents/{id}/create-reply",
+        "GET /api/v1/admin/documents/{id}/activity"
+      ]
+    },
+    {
+      "page": "Document Settings",
+      "primary_endpoints": [
+        "GET /api/v1/admin/document-categories",
+        "POST /api/v1/admin/document-categories",
+        "GET /api/v1/admin/correspondence-parties",
+        "POST /api/v1/admin/correspondence-parties"
+      ]
+    }
+  ],
+  "models": {
+    "document": {
+      "id": "uuid",
+      "school": "uuid",
+      "direction": "OUTGOING|INCOMING|INTERNAL",
+      "document_type": "LETTER|CIRCULAR|REPORT|TEACHER_ASSIGNMENT|STUDENT_ADMISSION|BUDGET|FINANCIAL_REPORT|ADMIN_REPORT|GUIDANCE_REPORT|OTHER",
+      "status": "DRAFT|REGISTERED|SENT|RECEIVED|UNDER_REVIEW|NEEDS_REPLY|REPLIED|ARCHIVED|CLOSED|CANCELLED",
+      "priority": "LOW|NORMAL|HIGH|URGENT",
+      "title": "string",
+      "subject": "string",
+      "document_number": "string",
+      "sequence_number": "integer|null",
+      "document_date": "date",
+      "registered_at": "datetime",
+      "category": "document_category|null",
+      "source_party": "correspondence_party|null",
+      "target_party": "correspondence_party|null",
+      "source_name": "string",
+      "target_name": "string",
+      "needs_reply": "boolean",
+      "reply_due_date": "date|null",
+      "replied_at": "datetime|null",
+      "related_document": "uuid|null",
+      "relation_type": "REPLY_TO|FOLLOW_UP|RELATED|REPLACES|null",
+      "academic_year": "uuid|null",
+      "tags": [
+        "string"
+      ],
+      "notes": "string",
+      "created_by": "user_summary|null",
+      "updated_by": "user_summary|null",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    },
+    "document_category": {
+      "id": "uuid",
+      "school": "uuid",
+      "name": "string",
+      "code": "string",
+      "parent": "uuid|null",
+      "description": "string",
+      "is_active": "boolean",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    },
+    "correspondence_party": {
+      "id": "uuid",
+      "school": "uuid",
+      "name": "string",
+      "party_type": "MINISTRY|DIRECTORATE|SCHOOL|PARENT|FINANCIAL_ENTITY|GUIDANCE|INTERNAL_DEPARTMENT|OTHER",
+      "phone": "string",
+      "email": "string",
+      "address": "string",
+      "notes": "string",
+      "is_active": "boolean"
+    },
+    "document_attachment": {
+      "id": "uuid",
+      "document": "uuid",
+      "original_filename": "string",
+      "file_size": "integer",
+      "mime_type": "application/pdf",
+      "is_primary": "boolean",
+      "download_url": "string",
+      "preview_url": "string",
+      "uploaded_by": "user_summary|null",
+      "created_at": "datetime"
+    },
+    "document_activity": {
+      "id": "uuid",
+      "document": "uuid",
+      "actor": "user_summary|null",
+      "action": "DOCUMENT_CREATED|DOCUMENT_UPDATED|DOCUMENT_ATTACHMENT_UPLOADED|DOCUMENT_LINKED|DOCUMENT_STATUS_CHANGED|DOCUMENT_ARCHIVED|DOCUMENT_DOWNLOADED|DOCUMENT_PREVIEWED|DOCUMENT_REPLY_CREATED|DOCUMENT_MARKED_SENT|DOCUMENT_MARKED_RECEIVED",
+      "message": "string",
+      "metadata": {},
+      "created_at": "datetime"
+    }
+  },
+  "endpoint_groups": [
+    {
+      "group": "Auth",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/api/v1/auth/login",
+          "implemented": true,
+          "auth_required": false,
+          "permissions": [],
+          "request": {
+            "content_type": "application/json",
+            "body": {
+              "email": "principal@madrasati.test",
+              "password": "********"
+            }
+          },
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "access": "<jwt-access>",
+                "refresh": "<jwt-refresh>",
+                "user": {
+                  "id": "018f7bb4-a856-7217-985e-ff0bb780dbd4",
+                  "email": "principal@madrasati.test",
+                  "full_name": "School Principal"
+                }
+              }
+            }
+          },
+          "errors": [
+            "INVALID_CREDENTIALS",
+            "USER_INACTIVE",
+            "RATE_LIMITED"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/auth/refresh",
+          "implemented": true,
+          "auth_required": false,
+          "permissions": [],
+          "request": {
+            "content_type": "application/json",
+            "body": {
+              "refresh": "<jwt-refresh>"
+            }
+          },
+          "response": {
+            "status": 200,
+            "body": {
+              "access": "<jwt-access>"
+            }
+          },
+          "errors": [
+            "TOKEN_EXPIRED",
+            "TOKEN_INVALID"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/auth/logout",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [],
+          "request": {
+            "content_type": "application/json",
+            "body": {
+              "refresh": "<jwt-refresh>"
+            }
+          },
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "detail": "Logged out"
+              }
+            }
+          },
+          "errors": [
+            "TOKEN_INVALID"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/me",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [],
+          "request": null,
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "id": "018f7bb4-a856-7217-985e-ff0bb780dbd4",
+                "email": "principal@madrasati.test",
+                "full_name": "School Principal",
+                "active_school": {
+                  "id": "018f7bb4-3d2f-7c94-9a7a-16a2f84a91c1",
+                  "name": "Ù…Ø¯Ø±Ø³ØªÙŠ"
+                },
+                "permissions": [
+                  "ADMIN_USERS_READ",
+                  "DOCUMENTS_READ",
+                  "DOCUMENTS_CREATE"
+                ]
+              }
+            }
+          },
+          "errors": [
+            "AUTHENTICATION_REQUIRED",
+            "NO_SCHOOL_CONTEXT"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/me/schools",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [],
+          "request": null,
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": [
+                {
+                  "id": "018f7bb4-3d2f-7c94-9a7a-16a2f84a91c1",
+                  "name": "Ù…Ø¯Ø±Ø³ØªÙŠ",
+                  "is_primary": true,
+                  "status": "ACTIVE"
+                }
+              ]
+            }
+          },
+          "errors": [
+            "AUTHENTICATION_REQUIRED"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/me/switch-school",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [],
+          "request": {
+            "content_type": "application/json",
+            "body": {
+              "school_id": "018f7bb4-3d2f-7c94-9a7a-16a2f84a91c1"
+            }
+          },
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "active_school_id": "018f7bb4-3d2f-7c94-9a7a-16a2f84a91c1"
+              }
+            }
+          },
+          "errors": [
+            "SCHOOL_NOT_FOUND",
+            "PERMISSION_DENIED"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Admin Overview",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/v1/admin/reports/overview",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "ADMIN_REPORTS_VIEW"
+          ],
+          "filters": [],
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "students": 420,
+                "attendance_today": 398,
+                "points_transactions": 1284,
+                "behavior_notes": 18,
+                "tickets_open": 4
+              }
+            }
+          },
+          "errors": [
+            "NO_SCHOOL_CONTEXT",
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dashboard/kpis",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "REPORTS_READ"
+          ],
+          "filters": [
+            "from",
+            "to",
+            "grade_id",
+            "classroom_id"
+          ],
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "attendance_rate": 0.947,
+                "active_students": 420,
+                "open_tickets": 4,
+                "recent_behavior_notes": 7
+              }
+            }
+          },
+          "errors": [
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/health",
+          "implemented": true,
+          "auth_required": false,
+          "permissions": [],
+          "response": {
+            "status": 200,
+            "body": {
+              "status": "ok",
+              "database": "ok",
+              "redis": "ok"
+            }
+          },
+          "errors": []
+        }
+      ]
+    },
+    {
+      "group": "Admin Users and RBAC",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/v1/admin/users",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "ADMIN_USERS_READ"
+          ],
+          "filters": [
+            "role",
+            "type",
+            "status",
+            "search",
+            "page",
+            "page_size",
+            "ordering"
+          ],
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "count": 1,
+                "next": null,
+                "previous": null,
+                "results": [
+                  {
+                    "id": "018f7bb4-a856-7217-985e-ff0bb780dbd4",
+                    "email": "principal@madrasati.test",
+                    "full_name": "School Principal",
+                    "phone": "+963900000000",
+                    "is_active": true,
+                    "roles": [
+                      "Principal"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "errors": [
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/users",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "ADMIN_USERS_CREATE"
+          ],
+          "request": {
+            "content_type": "application/json",
+            "body": {
+              "email": "teacher@madrasati.test",
+              "password": "StrongPassword#2026",
+              "full_name": "Teacher Name",
+              "phone": "+963900000001",
+              "profile_type": "teacher",
+              "teacher_code": "T-001",
+              "role_ids": [
+                "018f7bb4-bd14-7349-9c7d-0fa31ed9cbad"
+              ]
+            }
+          },
+          "response": {
+            "status": 201,
+            "body": {
+              "success": true,
+              "data": {
+                "id": "018f7bb4-c222-78ef-910d-8128998cd829"
+              }
+            }
+          },
+          "errors": [
+            "VALIDATION_ERROR",
+            "PERMISSION_DENIED",
+            "CONFLICT"
+          ]
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/v1/admin/users/{id}",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "ADMIN_USERS_UPDATE"
+          ],
+          "path_params": [
+            "id"
+          ],
+          "request": {
+            "content_type": "application/json",
+            "body": {
+              "full_name": "Updated Name",
+              "phone": "+963900000002"
+            }
+          },
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "id": "018f7bb4-c222-78ef-910d-8128998cd829",
+                "full_name": "Updated Name"
+              }
+            }
+          },
+          "errors": [
+            "NOT_FOUND",
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/users/{id}/reset-password",
+          "implemented": true,
+          "auth_required": true,
+          "idempotent": false,
+          "permissions": [
+            "ADMIN_USERS_RESET_PASSWORD"
+          ],
+          "request": {
+            "content_type": "application/json",
+            "body": {
+              "new_password": "NewStrongPassword#2026",
+              "reason": "Requested by school principal"
+            }
+          },
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "detail": "Password reset"
+              }
+            }
+          },
+          "errors": [
+            "AUDIT_REASON_REQUIRED",
+            "PERMISSION_DENIED",
+            "NOT_FOUND"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/admin/roles",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "ADMIN_RBAC_ROLES_READ"
+          ],
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": [
+                {
+                  "id": "018f7bb4-bd14-7349-9c7d-0fa31ed9cbad",
+                  "name": "Principal"
+                }
+              ]
+            }
+          },
+          "errors": [
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/admin/permissions",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "ADMIN_RBAC_PERMS_READ"
+          ],
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": [
+                {
+                  "code": "ADMIN_USERS_READ"
+                },
+                {
+                  "code": "DOCUMENTS_READ"
+                }
+              ]
+            }
+          },
+          "errors": [
+            "PERMISSION_DENIED"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Admin Academic Setup",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/v1/admin/academic-years",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "ADMIN_ACADEMIC_YEAR_MANAGE"
+          ],
+          "filters": [
+            "search",
+            "page",
+            "page_size",
+            "ordering"
+          ],
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "count": 1,
+                "results": [
+                  {
+                    "id": "018f7bb4-d19a-7fc2-9d87-5759f4fe59f0",
+                    "name": "2026-2027",
+                    "start_date": "2026-09-01",
+                    "end_date": "2027-06-30",
+                    "is_active": true
+                  }
+                ]
+              }
+            }
+          },
+          "errors": [
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/grades",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "GRADE_READ"
+          ],
+          "filters": [
+            "search",
+            "page",
+            "page_size"
+          ],
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "count": 1,
+                "results": [
+                  {
+                    "id": "018f7bb4-d6fb-7ed4-9233-8bf20bf37b7c",
+                    "name": "Grade 1"
+                  }
+                ]
+              }
+            }
+          },
+          "errors": [
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/classrooms",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "CLASSROOM_READ"
+          ],
+          "filters": [
+            "grade",
+            "academic_year",
+            "search",
+            "page",
+            "page_size"
+          ],
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "count": 1,
+                "results": [
+                  {
+                    "id": "018f7bb4-da29-77f8-a189-82794a20b675",
+                    "name": "A",
+                    "grade": "018f7bb4-d6fb-7ed4-9233-8bf20bf37b7c"
+                  }
+                ]
+              }
+            }
+          },
+          "errors": [
+            "PERMISSION_DENIED"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Admin Documents",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/v1/admin/documents/overview",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "DOCUMENTS_READ"
+          ],
+          "filters": [
+            "from",
+            "to",
+            "document_type",
+            "category",
+            "party"
+          ],
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "total": 842,
+                "outgoing": 320,
+                "incoming": 286,
+                "internal": 236,
+                "needs_reply": 21,
+                "overdue_replies": 6,
+                "archived": 510,
+                "by_status": {
+                  "REGISTERED": 104,
+                  "SENT": 73,
+                  "RECEIVED": 88,
+                  "ARCHIVED": 510
+                },
+                "recent_activity": [
+                  {
+                    "document_id": "018f7bb4-e484-7a77-9667-18ab81109977",
+                    "action": "DOCUMENT_CREATED",
+                    "title": "Budget approval",
+                    "created_at": "2026-07-04T09:30:00Z"
+                  }
+                ]
+              }
+            }
+          },
+          "errors": [
+            "NO_SCHOOL_CONTEXT",
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/admin/documents",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "DOCUMENTS_READ"
+          ],
+          "filters": [
+            "direction",
+            "document_type",
+            "status",
+            "priority",
+            "category",
+            "source_party",
+            "target_party",
+            "document_date_from",
+            "document_date_to",
+            "registered_from",
+            "registered_to",
+            "needs_reply",
+            "reply_due_before",
+            "tag",
+            "search",
+            "page",
+            "page_size",
+            "ordering"
+          ],
+          "ordering": [
+            "-registered_at",
+            "-document_date",
+            "document_number",
+            "status",
+            "priority"
+          ],
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "count": 1,
+                "next": null,
+                "previous": null,
+                "results": [
+                  {
+                    "id": "018f7bb4-e484-7a77-9667-18ab81109977",
+                    "direction": "OUTGOING",
+                    "document_type": "LETTER",
+                    "status": "REGISTERED",
+                    "priority": "NORMAL",
+                    "title": "Budget approval",
+                    "document_number": "OUT-2026-0001",
+                    "sequence_number": 1,
+                    "document_date": "2026-07-04",
+                    "registered_at": "2026-07-04T09:30:00Z",
+                    "category": {
+                      "id": "018f7bb4-e967-7b90-a8bf-42da4819480d",
+                      "name": "Finance / Budget",
+                      "code": "FINANCE_BUDGET"
+                    },
+                    "needs_reply": false,
+                    "attachments_count": 1
+                  }
+                ]
+              }
+            }
+          },
+          "errors": [
+            "PERMISSION_DENIED",
+            "VALIDATION_ERROR"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/documents",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "DOCUMENTS_CREATE"
+          ],
+          "request": {
+            "content_type": "application/json",
+            "body": {
+              "direction": "OUTGOING",
+              "document_type": "LETTER",
+              "status": "REGISTERED",
+              "priority": "NORMAL",
+              "title": "Budget approval",
+              "subject": "Approval request for 2026 budget",
+              "document_date": "2026-07-04",
+              "category": "018f7bb4-e967-7b90-a8bf-42da4819480d",
+              "target_party": "018f7bb4-ed66-7fd4-b8ee-51d7c1314caf",
+              "target_name": "Directorate of Education",
+              "needs_reply": true,
+              "reply_due_date": "2026-07-20",
+              "tags": [
+                "finance",
+                "budget"
+              ],
+              "notes": "Prepared by finance department."
+            }
+          },
+          "response": {
+            "status": 201,
+            "body": {
+              "success": true,
+              "data": {
+                "id": "018f7bb4-e484-7a77-9667-18ab81109977",
+                "document_number": "OUT-2026-0001",
+                "sequence_number": 1,
+                "status": "REGISTERED"
+              }
+            }
+          },
+          "errors": [
+            "VALIDATION_ERROR",
+            "PERMISSION_DENIED",
+            "DOCUMENT_NUMBER_CONFLICT",
+            "RELATED_DOCUMENT_SCHOOL_MISMATCH"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/admin/documents/{id}",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "DOCUMENTS_READ"
+          ],
+          "path_params": [
+            "id"
+          ],
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "id": "018f7bb4-e484-7a77-9667-18ab81109977",
+                "direction": "OUTGOING",
+                "document_type": "LETTER",
+                "status": "REGISTERED",
+                "priority": "NORMAL",
+                "title": "Budget approval",
+                "subject": "Approval request for 2026 budget",
+                "document_number": "OUT-2026-0001",
+                "sequence_number": 1,
+                "document_date": "2026-07-04",
+                "registered_at": "2026-07-04T09:30:00Z",
+                "category": {
+                  "id": "018f7bb4-e967-7b90-a8bf-42da4819480d",
+                  "name": "Finance / Budget",
+                  "code": "FINANCE_BUDGET"
+                },
+                "source_party": null,
+                "target_party": {
+                  "id": "018f7bb4-ed66-7fd4-b8ee-51d7c1314caf",
+                  "name": "Directorate of Education",
+                  "party_type": "DIRECTORATE"
+                },
+                "needs_reply": true,
+                "reply_due_date": "2026-07-20",
+                "attachments": [
+                  {
+                    "id": "018f7bb4-f2ba-79df-a765-469b84611817",
+                    "original_filename": "budget-approval.pdf",
+                    "file_size": 245760,
+                    "mime_type": "application/pdf",
+                    "is_primary": true,
+                    "download_url": "/api/v1/admin/documents/018f7bb4-e484-7a77-9667-18ab81109977/attachments/018f7bb4-f2ba-79df-a765-469b84611817/download"
+                  }
+                ],
+                "related_documents": []
+              }
+            }
+          },
+          "errors": [
+            "NOT_FOUND",
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/v1/admin/documents/{id}",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "DOCUMENTS_UPDATE"
+          ],
+          "request": {
+            "content_type": "application/json",
+            "body": {
+              "priority": "HIGH",
+              "notes": "Follow up next week."
+            }
+          },
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "id": "018f7bb4-e484-7a77-9667-18ab81109977",
+                "priority": "HIGH",
+                "updated_at": "2026-07-04T10:10:00Z"
+              }
+            }
+          },
+          "errors": [
+            "NOT_FOUND",
+            "VALIDATION_ERROR",
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/admin/documents/{id}",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "DOCUMENTS_DELETE"
+          ],
+          "request": {
+            "content_type": "application/json",
+            "body": {
+              "reason": "Duplicate registration"
+            }
+          },
+          "response": {
+            "status": 204,
+            "body": null
+          },
+          "errors": [
+            "AUDIT_REASON_REQUIRED",
+            "NOT_FOUND",
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/admin/documents/outgoing",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "OUTGOING_READ"
+          ],
+          "filters": [
+            "status",
+            "priority",
+            "category",
+            "target_party",
+            "document_date_from",
+            "document_date_to",
+            "search",
+            "page",
+            "page_size"
+          ],
+          "response": {
+            "status": 200,
+            "body": "Same as GET /api/v1/admin/documents with direction=OUTGOING"
+          },
+          "errors": [
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/admin/documents/incoming",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "INCOMING_READ"
+          ],
+          "filters": [
+            "status",
+            "priority",
+            "category",
+            "source_party",
+            "needs_reply",
+            "document_date_from",
+            "document_date_to",
+            "search",
+            "page",
+            "page_size"
+          ],
+          "response": {
+            "status": 200,
+            "body": "Same as GET /api/v1/admin/documents with direction=INCOMING"
+          },
+          "errors": [
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/admin/documents/circulars",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "CIRCULARS_READ"
+          ],
+          "filters": [
+            "status",
+            "category",
+            "needs_reply",
+            "document_date_from",
+            "document_date_to",
+            "search",
+            "page",
+            "page_size"
+          ],
+          "response": {
+            "status": 200,
+            "body": "Same as GET /api/v1/admin/documents with document_type=CIRCULAR"
+          },
+          "errors": [
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/admin/documents/needs-reply",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "DOCUMENTS_READ"
+          ],
+          "filters": [
+            "overdue",
+            "reply_due_before",
+            "priority",
+            "page",
+            "page_size"
+          ],
+          "response": {
+            "status": 200,
+            "body": "Same as GET /api/v1/admin/documents with needs_reply=true and status not REPLIED/CLOSED/ARCHIVED"
+          },
+          "errors": [
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/documents/{id}/attachments",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "DOCUMENTS_UPDATE"
+          ],
+          "request": {
+            "content_type": "multipart/form-data",
+            "body": {
+              "file": "budget-approval.pdf",
+              "is_primary": true
+            }
+          },
+          "response": {
+            "status": 201,
+            "body": {
+              "success": true,
+              "data": {
+                "id": "018f7bb4-f2ba-79df-a765-469b84611817",
+                "original_filename": "budget-approval.pdf",
+                "file_size": 245760,
+                "mime_type": "application/pdf",
+                "is_primary": true
+              }
+            }
+          },
+          "errors": [
+            "NOT_FOUND",
+            "PERMISSION_DENIED",
+            "UNSUPPORTED_MEDIA_TYPE",
+            "FILE_TOO_LARGE"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/admin/documents/{id}/attachments",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "DOCUMENTS_READ"
+          ],
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": [
+                {
+                  "id": "018f7bb4-f2ba-79df-a765-469b84611817",
+                  "original_filename": "budget-approval.pdf",
+                  "file_size": 245760,
+                  "mime_type": "application/pdf",
+                  "is_primary": true,
+                  "download_url": "/api/v1/admin/documents/018f7bb4-e484-7a77-9667-18ab81109977/attachments/018f7bb4-f2ba-79df-a765-469b84611817/download"
+                }
+              ]
+            }
+          },
+          "errors": [
+            "NOT_FOUND",
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/admin/documents/{id}/attachments/{attachment_id}/download",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "DOCUMENTS_DOWNLOAD"
+          ],
+          "response": {
+            "status": 200,
+            "content_type": "application/pdf",
+            "body": "<binary pdf stream>"
+          },
+          "errors": [
+            "NOT_FOUND",
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/admin/documents/{id}/attachments/{attachment_id}/preview",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "DOCUMENTS_PREVIEW"
+          ],
+          "response": {
+            "status": 200,
+            "content_type": "application/pdf",
+            "body": "<binary pdf stream>"
+          },
+          "errors": [
+            "NOT_FOUND",
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/documents/{id}/link",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "DOCUMENTS_LINK"
+          ],
+          "request": {
+            "content_type": "application/json",
+            "body": {
+              "related_document": "018f7bb4-f9a9-7400-9129-d064e0387b83",
+              "relation_type": "FOLLOW_UP"
+            }
+          },
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "id": "018f7bb4-e484-7a77-9667-18ab81109977",
+                "related_document": "018f7bb4-f9a9-7400-9129-d064e0387b83",
+                "relation_type": "FOLLOW_UP"
+              }
+            }
+          },
+          "errors": [
+            "DOCUMENT_SELF_LINK_FORBIDDEN",
+            "RELATED_DOCUMENT_SCHOOL_MISMATCH",
+            "NOT_FOUND",
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/documents/{id}/create-reply",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "CIRCULARS_REPLY",
+            "DOCUMENTS_CREATE"
+          ],
+          "request": {
+            "content_type": "application/json",
+            "body": {
+              "title": "Reply to budget circular",
+              "subject": "Response details",
+              "document_date": "2026-07-05",
+              "priority": "NORMAL",
+              "notes": "Auto-linked to source document."
+            }
+          },
+          "response": {
+            "status": 201,
+            "body": {
+              "success": true,
+              "data": {
+                "id": "018f7bb5-00fd-73d4-bdb7-81869e018ac7",
+                "document_number": "OUT-2026-0002",
+                "related_document": "018f7bb4-e484-7a77-9667-18ab81109977",
+                "relation_type": "REPLY_TO"
+              }
+            }
+          },
+          "errors": [
+            "NOT_FOUND",
+            "PERMISSION_DENIED",
+            "VALIDATION_ERROR"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/documents/{id}/mark-sent",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "OUTGOING_MARK_SENT"
+          ],
+          "request": {
+            "content_type": "application/json",
+            "body": {
+              "sent_at": "2026-07-04T11:00:00Z",
+              "reason": "Delivered to directorate"
+            }
+          },
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "id": "018f7bb4-e484-7a77-9667-18ab81109977",
+                "status": "SENT"
+              }
+            }
+          },
+          "errors": [
+            "INVALID_DOCUMENT_DIRECTION",
+            "AUDIT_REASON_REQUIRED",
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/documents/{id}/mark-received",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "INCOMING_MARK_RECEIVED"
+          ],
+          "request": {
+            "content_type": "application/json",
+            "body": {
+              "received_at": "2026-07-04T11:15:00Z",
+              "reason": "Officially registered"
+            }
+          },
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "id": "018f7bb5-064c-74c6-9594-c99731696a4b",
+                "status": "RECEIVED"
+              }
+            }
+          },
+          "errors": [
+            "INVALID_DOCUMENT_DIRECTION",
+            "AUDIT_REASON_REQUIRED",
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/documents/{id}/archive",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "DOCUMENTS_ARCHIVE"
+          ],
+          "request": {
+            "content_type": "application/json",
+            "body": {
+              "reason": "Completed and archived"
+            }
+          },
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "id": "018f7bb4-e484-7a77-9667-18ab81109977",
+                "status": "ARCHIVED"
+              }
+            }
+          },
+          "errors": [
+            "AUDIT_REASON_REQUIRED",
+            "NOT_FOUND",
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/admin/documents/{id}/activity",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "DOCUMENTS_READ"
+          ],
+          "filters": [
+            "page",
+            "page_size"
+          ],
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "count": 1,
+                "results": [
+                  {
+                    "id": "018f7bb5-0b5e-76f7-98d2-645d25bd4224",
+                    "action": "DOCUMENT_CREATED",
+                    "message": "Document created",
+                    "actor": {
+                      "id": "018f7bb4-a856-7217-985e-ff0bb780dbd4",
+                      "full_name": "School Principal"
+                    },
+                    "created_at": "2026-07-04T09:30:00Z"
+                  }
+                ]
+              }
+            }
+          },
+          "errors": [
+            "NOT_FOUND",
+            "PERMISSION_DENIED"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Document Categories",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/v1/admin/document-categories",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "DOCUMENTS_MANAGE_CATEGORIES"
+          ],
+          "filters": [
+            "parent",
+            "is_active",
+            "search",
+            "page",
+            "page_size",
+            "ordering"
+          ],
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "count": 1,
+                "results": [
+                  {
+                    "id": "018f7bb4-e967-7b90-a8bf-42da4819480d",
+                    "name": "Finance / Budget",
+                    "code": "FINANCE_BUDGET",
+                    "parent": null,
+                    "is_active": true
+                  }
+                ]
+              }
+            }
+          },
+          "errors": [
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/document-categories",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "DOCUMENTS_MANAGE_CATEGORIES"
+          ],
+          "request": {
+            "content_type": "application/json",
+            "body": {
+              "name": "Finance / Budget",
+              "code": "FINANCE_BUDGET",
+              "parent": null,
+              "description": "Budget and finance documents",
+              "is_active": true
+            }
+          },
+          "response": {
+            "status": 201,
+            "body": {
+              "success": true,
+              "data": {
+                "id": "018f7bb4-e967-7b90-a8bf-42da4819480d",
+                "name": "Finance / Budget",
+                "code": "FINANCE_BUDGET"
+              }
+            }
+          },
+          "errors": [
+            "VALIDATION_ERROR",
+            "CONFLICT",
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/v1/admin/document-categories/{id}",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "DOCUMENTS_MANAGE_CATEGORIES"
+          ],
+          "request": {
+            "content_type": "application/json",
+            "body": {
+              "description": "Updated description",
+              "is_active": true
+            }
+          },
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "id": "018f7bb4-e967-7b90-a8bf-42da4819480d",
+                "description": "Updated description"
+              }
+            }
+          },
+          "errors": [
+            "NOT_FOUND",
+            "VALIDATION_ERROR",
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/admin/document-categories/{id}",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "DOCUMENTS_MANAGE_CATEGORIES"
+          ],
+          "response": {
+            "status": 204,
+            "body": null
+          },
+          "errors": [
+            "CATEGORY_IN_USE",
+            "NOT_FOUND",
+            "PERMISSION_DENIED"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Correspondence Parties",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/v1/admin/correspondence-parties",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "DOCUMENTS_MANAGE_PARTIES"
+          ],
+          "filters": [
+            "party_type",
+            "is_active",
+            "search",
+            "page",
+            "page_size",
+            "ordering"
+          ],
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "count": 1,
+                "results": [
+                  {
+                    "id": "018f7bb4-ed66-7fd4-b8ee-51d7c1314caf",
+                    "name": "Directorate of Education",
+                    "party_type": "DIRECTORATE",
+                    "phone": "+963110000000",
+                    "email": "office@example.test",
+                    "is_active": true
+                  }
+                ]
+              }
+            }
+          },
+          "errors": [
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/admin/correspondence-parties",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "DOCUMENTS_MANAGE_PARTIES"
+          ],
+          "request": {
+            "content_type": "application/json",
+            "body": {
+              "name": "Directorate of Education",
+              "party_type": "DIRECTORATE",
+              "phone": "+963110000000",
+              "email": "office@example.test",
+              "address": "Damascus",
+              "notes": "",
+              "is_active": true
+            }
+          },
+          "response": {
+            "status": 201,
+            "body": {
+              "success": true,
+              "data": {
+                "id": "018f7bb4-ed66-7fd4-b8ee-51d7c1314caf",
+                "name": "Directorate of Education",
+                "party_type": "DIRECTORATE"
+              }
+            }
+          },
+          "errors": [
+            "VALIDATION_ERROR",
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/v1/admin/correspondence-parties/{id}",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "DOCUMENTS_MANAGE_PARTIES"
+          ],
+          "request": {
+            "content_type": "application/json",
+            "body": {
+              "phone": "+963110000001",
+              "notes": "Updated contact"
+            }
+          },
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "id": "018f7bb4-ed66-7fd4-b8ee-51d7c1314caf",
+                "phone": "+963110000001"
+              }
+            }
+          },
+          "errors": [
+            "NOT_FOUND",
+            "VALIDATION_ERROR",
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/admin/correspondence-parties/{id}",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "DOCUMENTS_MANAGE_PARTIES"
+          ],
+          "response": {
+            "status": 204,
+            "body": null
+          },
+          "errors": [
+            "PARTY_IN_USE",
+            "NOT_FOUND",
+            "PERMISSION_DENIED"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Admin Tickets",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/v1/admin/tickets",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "ADMIN_TICKETS_VIEW"
+          ],
+          "filters": [
+            "status"
+          ],
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": [
+                {
+                  "id": "018f7bb5-108c-75c5-98e8-1a05e3ad7855",
+                  "title": "Login issue",
+                  "status": "OPEN",
+                  "priority": "NORMAL"
+                }
+              ]
+            }
+          },
+          "errors": [
+            "PERMISSION_DENIED"
+          ]
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/v1/admin/tickets/{id}/assign",
+          "implemented": true,
+          "auth_required": true,
+          "permissions": [
+            "ADMIN_TICKETS_ASSIGN"
+          ],
+          "request": {
+            "content_type": "application/json",
+            "body": {
+              "assigned_to": "018f7bb4-a856-7217-985e-ff0bb780dbd4"
+            }
+          },
+          "response": {
+            "status": 200,
+            "body": {
+              "success": true,
+              "data": {
+                "id": "018f7bb5-108c-75c5-98e8-1a05e3ad7855",
+                "status": "IN_PROGRESS"
+              }
+            }
+          },
+          "errors": [
+            "TICKET_NOT_FOUND",
+            "USER_NOT_FOUND",
+            "PERMISSION_DENIED"
+          ]
+        }
+      ]
+    }
+  ],
+  "permission_catalog": {
+    "documents": [
+      "DOCUMENTS_READ",
+      "DOCUMENTS_CREATE",
+      "DOCUMENTS_UPDATE",
+      "DOCUMENTS_DELETE",
+      "DOCUMENTS_ARCHIVE",
+      "DOCUMENTS_DOWNLOAD",
+      "DOCUMENTS_PREVIEW",
+      "DOCUMENTS_LINK",
+      "DOCUMENTS_MANAGE_CATEGORIES",
+      "DOCUMENTS_MANAGE_PARTIES",
+      "OUTGOING_READ",
+      "OUTGOING_CREATE",
+      "OUTGOING_UPDATE",
+      "OUTGOING_MARK_SENT",
+      "INCOMING_READ",
+      "INCOMING_CREATE",
+      "INCOMING_UPDATE",
+      "INCOMING_MARK_RECEIVED",
+      "CIRCULARS_READ",
+      "CIRCULARS_CREATE",
+      "CIRCULARS_REPLY",
+      "FINANCIAL_DOCUMENTS_READ",
+      "FINANCIAL_DOCUMENTS_MANAGE",
+      "ADMIN_DOCUMENTS_READ",
+      "ADMIN_DOCUMENTS_MANAGE",
+      "GUIDANCE_DOCUMENTS_READ",
+      "GUIDANCE_DOCUMENTS_MANAGE"
+    ],
+    "existing_admin": [
+      "ADMIN_USERS_READ",
+      "ADMIN_USERS_CREATE",
+      "ADMIN_USERS_UPDATE",
+      "ADMIN_USERS_DISABLE_ENABLE",
+      "ADMIN_USERS_RESET_PASSWORD",
+      "ADMIN_RBAC_ROLES_READ",
+      "ADMIN_RBAC_PERMS_READ",
+      "ADMIN_RBAC_ASSIGN_ROLE",
+      "ADMIN_RBAC_GRANT_PERMISSION",
+      "ADMIN_RBAC_REVOKE_PERMISSION",
+      "ADMIN_REPORTS_VIEW",
+      "ADMIN_TICKETS_VIEW",
+      "ADMIN_TICKETS_ASSIGN",
+      "ADMIN_TICKETS_CLOSE",
+      "ADMIN_TICKETS_ESCALATE"
+    ]
+  },
+  "implementation_notes": [
+    "Principal or school manager roles should receive all document permissions inside their own school.",
+    "Document numbers must be unique inside a school; generated sequence numbers must be transaction-safe per school/year/direction.",
+    "PDF attachments must be stored with FileField-backed media storage, never inside the database.",
+    "Central IT should not receive direct access to school correspondence unless explicitly delegated through school context and RBAC.",
+    "All sensitive actions must write both DocumentActivityLog and the shared AuditLog when available."
+  ],
+  "version": "1.0.0",
+  "last_updated": "2026-07-04"
+}

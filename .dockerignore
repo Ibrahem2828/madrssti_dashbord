@@ -1,0 +1,8 @@
+.git
+.next
+coverage
+docs
+node_modules
+npm-debug.log*
+Dockerfile*
+.phase3-start.log

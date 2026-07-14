@@ -1,0 +1,1 @@
+import {getTranslations} from "next-intl/server"; export default async function NotFound(){const t=await getTranslations("errors");return <main className="grid min-h-screen place-items-center p-6"><h1 className="text-xl font-bold">{t("forbidden")}</h1></main>}

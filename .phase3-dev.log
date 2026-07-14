@@ -1,0 +1,42 @@
+
+> madrasti-dashboard@4.0.0 dev
+> next dev --hostname localhost --port 3000
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3000
+  - Network:      http://127.0.0.1:3000
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 7s
+ ○ Compiling /src/middleware ...
+ ✓ Compiled /src/middleware in 2.4s (171 modules)
+ ○ Compiling /[locale]/login/central ...
+ ✓ Compiled /[locale]/login/central in 15.8s (740 modules)
+ GET /en/login/central 200 in 18816ms
+ HEAD /en/login/central 200 in 106ms
+ ○ Compiling /[locale] ...
+ ✓ Compiled /[locale] in 1545ms (744 modules)
+ HEAD /ar 307 in 3298ms
+ HEAD /en 307 in 106ms
+ ○ Compiling /[locale]/login ...
+ ✓ Compiled /[locale]/login in 742ms (732 modules)
+ HEAD /ar/login 200 in 2368ms
+ HEAD /en/login 200 in 127ms
+ ○ Compiling /[locale]/login/school ...
+ ✓ Compiled /[locale]/login/school in 667ms (734 modules)
+ HEAD /ar/login/school 200 in 2260ms
+ HEAD /en/login/school 200 in 113ms
+ ○ Compiling /api/health/backend ...
+ ✓ Compiled /api/health/backend in 875ms (443 modules)
+ GET /api/health/backend 502 in 12096ms
+ ✓ Compiled in 1922ms (335 modules)
+ ✓ Compiled in 754ms (335 modules)
+ ✓ Compiled in 489ms (335 modules)
+ ✓ Compiled in 514ms (335 modules)
+ ✓ Compiled in 524ms (335 modules)
+ ✓ Compiled in 580ms (335 modules)
+ ✓ Compiled in 681ms (335 modules)
+ ✓ Compiled in 589ms (335 modules)
+ ✓ Compiled in 635ms (335 modules)
+[?25h
