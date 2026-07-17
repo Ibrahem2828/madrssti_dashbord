@@ -19,13 +19,14 @@ import {validateSameOriginAndCsrf} from "@/lib/auth/csrf";
 const safeHeaders = ["accept", "content-type", "x-request-id", "idempotency-key", "if-match"] as const;
 
 export async function proxyGateway(request: NextRequest, portal: Portal, path: string[]): Promise<NextResponse> {
+  const requestId = request.headers.get("x-request-id") ?? crypto.randomUUID();
   const auth = authCookieValues();
   if (!auth.access || auth.portal !== portal) {
-    return buildFailureResponse(401, "AUTHENTICATION_REQUIRED", "Authentication required");
+    return buildFailureResponse(401, "AUTHENTICATION_REQUIRED", "Authentication required", {requestId});
   }
 
   if (!validPath(path, portal)) {
-    return buildFailureResponse(403, "PATH_FORBIDDEN", "Path is not allowed");
+    return buildFailureResponse(403, "PATH_FORBIDDEN", "Path is not allowed", {requestId});
   }
 
   if (!["GET", "HEAD"].includes(request.method)) {
@@ -33,7 +34,7 @@ export async function proxyGateway(request: NextRequest, portal: Portal, path: s
 
     if (!protection.ok) {
       return buildFailureResponse(403, protection.code, protection.message, {
-        requestId: crypto.randomUUID(),
+        requestId,
       });
     }
   }
@@ -47,7 +48,7 @@ export async function proxyGateway(request: NextRequest, portal: Portal, path: s
   });
 
   headers.set("Authorization", `Bearer ${auth.access}`);
-  headers.set("X-Request-ID", headers.get("X-Request-ID") ?? crypto.randomUUID());
+  headers.set("X-Request-ID", headers.get("X-Request-ID") ?? requestId);
 
   if (portal === "school" && auth.activeSchool) {
     headers.set("X-School-ID", auth.activeSchool);
@@ -71,10 +72,8 @@ export async function proxyGateway(request: NextRequest, portal: Portal, path: s
       {requestId: headers.get("X-Request-ID") ?? undefined, timeoutMs},
     );
 
-    return responseFrom(response);
+    return responseFrom(response, requestId);
   } catch (error) {
-    const requestId = headers.get("X-Request-ID") ?? undefined;
-
     if (error instanceof BackendRequestError) {
       logBackendFailure("gateway", {
         requestId,
@@ -91,7 +90,7 @@ export async function proxyGateway(request: NextRequest, portal: Portal, path: s
         backendRequestId: undefined,
       });
 
-      return buildBackendRequestFailureResponse(error, requestId ?? crypto.randomUUID(), {
+      return buildBackendRequestFailureResponse(error, requestId, {
         BACKEND_TIMEOUT: "The backend request timed out.",
         BACKEND_UNAVAILABLE: "The backend request could not be completed.",
       });
@@ -112,7 +111,7 @@ function validPath(path: string[], portal: Portal): boolean {
     : first !== "central";
 }
 
-async function responseFrom(response: Response): Promise<NextResponse> {
+async function responseFrom(response: Response, fallbackRequestId: string): Promise<NextResponse> {
   const headers = new Headers();
   ["content-type", "content-disposition", "cache-control", "x-request-id"].forEach((name) => {
     const value = response.headers.get(name);
@@ -121,8 +120,8 @@ async function responseFrom(response: Response): Promise<NextResponse> {
     }
   });
 
-  const requestId = extractRequestId(response);
-  if (requestId && !headers.get("x-request-id")) {
+  const requestId = extractRequestId(response) ?? fallbackRequestId;
+  if (!headers.get("x-request-id")) {
     headers.set("X-Request-ID", requestId);
   }
 

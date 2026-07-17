@@ -3,8 +3,12 @@ import {
   classifyConnectivityStatus,
   diagnoseBackendFailure,
 } from "../src/lib/api/backend-core.js";
+import {existsSync, readFileSync} from "node:fs";
+import {resolve} from "node:path";
 
 const DEFAULT_TIMEOUT_MS = BACKEND_TIMEOUTS.authentication;
+
+loadLocalEnvironment();
 
 function readArg(name) {
   const index = process.argv.indexOf(name);
@@ -12,10 +16,13 @@ function readArg(name) {
 }
 
 function readBaseUrl() {
-  const value = readArg("--base-url") ?? process.env.API_BASE_URL;
+  const backendBaseUrl = process.env.BACKEND_BASE_URL?.trim();
+  const value = readArg("--base-url")
+    ?? process.env.API_BASE_URL?.trim()
+    ?? (backendBaseUrl ? new URL("/api/v1", backendBaseUrl).toString() : undefined);
 
   if (!value) {
-    throw new Error("API_BASE_URL or --base-url is required.");
+    throw new Error("BACKEND_BASE_URL, API_BASE_URL, or --base-url is required.");
   }
 
   const url = new URL(value);
@@ -25,7 +32,49 @@ function readBaseUrl() {
     throw new Error("API_BASE_URL must include the exact /api/v1 base path.");
   }
 
+  if (backendBaseUrl && new URL(value).origin !== new URL(backendBaseUrl).origin) {
+    throw new Error("API_BASE_URL and BACKEND_BASE_URL must use the same backend origin.");
+  }
+
   return url.toString().replace(/\/$/, "");
+}
+
+function loadLocalEnvironment() {
+  const envFilePath = resolve(process.cwd(), ".env.local");
+
+  if (!existsSync(envFilePath)) {
+    return;
+  }
+
+  for (const line of readFileSync(envFilePath, "utf8").split(/\r?\n/u)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) {
+      continue;
+    }
+
+    const separatorIndex = trimmed.indexOf("=");
+    if (separatorIndex <= 0) {
+      continue;
+    }
+
+    const key = trimmed.slice(0, separatorIndex).trim();
+    if (!key || Object.prototype.hasOwnProperty.call(process.env, key)) {
+      continue;
+    }
+
+    process.env[key] = normalizeEnvironmentValue(trimmed.slice(separatorIndex + 1).trim());
+  }
+}
+
+function normalizeEnvironmentValue(value) {
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    return value.slice(1, -1);
+  }
+
+  return value;
 }
 
 function buildUrl(baseUrl, path) {

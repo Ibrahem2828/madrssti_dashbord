@@ -1,10 +1,11 @@
-import {existsSync, readFileSync} from "node:fs";
+import {cpSync, existsSync, mkdirSync, readFileSync} from "node:fs";
 import {resolve} from "node:path";
 import {spawn} from "node:child_process";
 
 const repoRoot = process.cwd();
 const envFilePath = resolve(repoRoot, ".env.local");
 const serverPath = resolve(repoRoot, ".next", "standalone", "server.js");
+const standaloneRoot = resolve(repoRoot, ".next", "standalone");
 
 if (existsSync(envFilePath)) {
   const content = readFileSync(envFilePath, "utf8");
@@ -40,6 +41,8 @@ if (!Object.prototype.hasOwnProperty.call(process.env, "MADRASTI_LOCAL_RUNTIME")
 process.env.PORT = process.env.PORT || "3000";
 process.env.HOSTNAME = process.env.HOSTNAME || "0.0.0.0";
 
+ensureStandaloneAssets();
+
 const child = spawn(process.execPath, [serverPath], {
   cwd: repoRoot,
   env: process.env,
@@ -72,4 +75,22 @@ function normalizeEnvValue(value) {
   }
 
   return value;
+}
+
+function ensureStandaloneAssets() {
+  if (!existsSync(serverPath)) {
+    throw new Error("Standalone server artifact is missing. Run npm run build before npm run start.");
+  }
+
+  copyDirectoryIfPresent(resolve(repoRoot, ".next", "static"), resolve(standaloneRoot, ".next", "static"));
+  copyDirectoryIfPresent(resolve(repoRoot, "public"), resolve(standaloneRoot, "public"));
+}
+
+function copyDirectoryIfPresent(source, destination) {
+  if (!existsSync(source)) {
+    return;
+  }
+
+  mkdirSync(destination, {recursive: true});
+  cpSync(source, destination, {recursive: true, force: true});
 }

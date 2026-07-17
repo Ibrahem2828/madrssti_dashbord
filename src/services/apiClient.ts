@@ -3,6 +3,7 @@ import type { ApiResponse } from "@/types/api";
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 export interface ApiClientConfig {
+  /** @deprecated Retained only for type compatibility. Browser token refresh is forbidden; this callback is ignored. */
   baseUrl: string;
   defaultHeaders?: Record<string, string>;
   timeout?: number;
@@ -67,32 +68,68 @@ function buildUrl(baseUrl: string, url: string, params?: Record<string, string |
   return qs ? `${fullUrl}${fullUrl.includes("?") ? "&" : "?"}${qs}` : fullUrl;
 }
 
-/** @deprecated Configure legacy calls against the same-origin school gateway. */
+/** @deprecated Configure legacy calls against a same-origin BFF gateway only. */
 const LIVE_API_BASE = "/api/gateway/school";
+const ALLOWED_GATEWAY_BASES = ["/api/gateway/school", "/api/gateway/central"] as const;
+const FORBIDDEN_BROWSER_HEADERS = new Set(["authorization", "cookie", "x-school-id"]);
+
+function normalizeGatewayBase(value: string): string {
+  const normalized = value.trim().replace(/\/+$/, "");
+
+  if (!ALLOWED_GATEWAY_BASES.includes(normalized as (typeof ALLOWED_GATEWAY_BASES)[number])) {
+    throw new Error("Legacy API clients may use only a same-origin Madrasti BFF gateway.");
+  }
+
+  return normalized;
+}
+
+function sanitizeBrowserHeaders(headers: Record<string, string>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(headers).filter(([name]) => !FORBIDDEN_BROWSER_HEADERS.has(name.toLowerCase())),
+  );
+}
+
+function csrfToken(): string | null {
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  const cookie = document.cookie
+    .split("; ")
+    .find((item) => item.startsWith("madrasti_csrf="));
+  const value = cookie?.slice("madrasti_csrf=".length);
+  return value ? decodeURIComponent(value) : null;
+}
 
 export function createApiClient(userConfig?: Partial<ApiClientConfig>): ApiClientInstance {
   const config: ApiClientConfig = {
-    baseUrl: userConfig?.baseUrl ?? LIVE_API_BASE,
-    defaultHeaders: {
+    baseUrl: normalizeGatewayBase(userConfig?.baseUrl ?? LIVE_API_BASE),
+    defaultHeaders: sanitizeBrowserHeaders({
       "Content-Type": "application/json",
       Accept: "application/json",
       ...userConfig?.defaultHeaders,
-    },
+    }),
     timeout: userConfig?.timeout ?? 30000,
     retryCount: userConfig?.retryCount ?? 1,
     onRequest: userConfig?.onRequest,
     onResponse: userConfig?.onResponse,
     onError: userConfig?.onError,
-    onAuthFailure: userConfig?.onAuthFailure,
+    // A legacy caller may still provide this option at compile time, but the
+    // browser adapter must never retain or use a token-refresh callback.
+    onAuthFailure: undefined,
   };
 
   const instance: ApiClientInstance = {
     setBaseUrl(url: string) {
-      config.baseUrl = url;
+      config.baseUrl = normalizeGatewayBase(url);
     },
 
     setHeader(key: string, value: string) {
-      config.defaultHeaders = { ...config.defaultHeaders, [key]: value };
+      if (FORBIDDEN_BROWSER_HEADERS.has(key.toLowerCase())) {
+        throw new Error(`The ${key} header is managed by the server-side BFF.`);
+      }
+
+      config.defaultHeaders = {...config.defaultHeaders, [key]: value};
     },
 
     removeHeader(key: string) {
@@ -110,10 +147,10 @@ export function createApiClient(userConfig?: Partial<ApiClientConfig>): ApiClien
       let requestConfig: RequestConfig = {
         method,
         url: buildUrl(config.baseUrl, url, options?.params),
-        headers: {
+        headers: sanitizeBrowserHeaders({
           ...config.defaultHeaders,
           ...options?.headers,
-        },
+        }),
         body,
         signal: options?.signal,
         idempotent: options?.idempotent ?? false,
@@ -126,6 +163,13 @@ export function createApiClient(userConfig?: Partial<ApiClientConfig>): ApiClien
       const xRequestId = generateIdempotencyKey().slice(0, 32);
       requestConfig.headers["X-Request-ID"] = xRequestId;
 
+      if (!["GET", "DELETE"].includes(method) && !requestConfig.headers["X-CSRF-Token"]) {
+        const csrf = csrfToken();
+        if (csrf) {
+          requestConfig.headers["X-CSRF-Token"] = csrf;
+        }
+      }
+
       if (config.onRequest) {
         requestConfig = await config.onRequest(requestConfig);
       }
@@ -137,7 +181,9 @@ export function createApiClient(userConfig?: Partial<ApiClientConfig>): ApiClien
         : controller.signal;
 
       let attempts = 0;
-      const maxAttempts = Math.max(1, (config.retryCount ?? 0) + 1);
+      // Retained configuration is intentionally ignored: legacy browser calls
+      // never replay automatically, especially not state-changing requests.
+      const maxAttempts = 1;
 
       while (attempts < maxAttempts) {
         attempts++;
@@ -146,6 +192,7 @@ export function createApiClient(userConfig?: Partial<ApiClientConfig>): ApiClien
             method: requestConfig.method,
             headers: requestConfig.headers,
             signal: combinedSignal,
+            credentials: "same-origin",
           };
 
           if (requestConfig.body !== undefined && requestConfig.method !== "GET" && requestConfig.method !== "DELETE") {
@@ -158,17 +205,6 @@ export function createApiClient(userConfig?: Partial<ApiClientConfig>): ApiClien
 
           const response = await fetch(requestConfig.url, fetchOptions);
           clearTimeout(timeoutId);
-
-          if (response.status === 401 && config.onAuthFailure) {
-            const newToken = await config.onAuthFailure();
-            if (newToken) {
-              requestConfig.headers["Authorization"] = `Bearer ${newToken}`;
-              if (requestConfig.idempotent && ["POST", "PATCH"].includes(method)) {
-                requestConfig.headers["Idempotency-Key"] = generateIdempotencyKey();
-              }
-              continue;
-            }
-          }
 
           let data: ApiResponse<T>;
           const contentType = response.headers.get("content-type") ?? "";

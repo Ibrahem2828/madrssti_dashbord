@@ -26,6 +26,9 @@ import type {
   SchoolBehaviorReport,
   SchoolTicket,
   SchoolUser,
+  SchoolActorSummary,
+  SchoolDocumentRelated,
+  SchoolDocumentOverviewActivity,
 } from "../types/contracts";
 
 type UnknownRecord = Record<string, unknown>;
@@ -59,13 +62,26 @@ export function userFromDto(value: unknown): SchoolUser {
     phone: asText(dto.phone),
     fullName: asText(dto.full_name),
     isActive: Boolean(dto.is_active),
-    userType: asText(dto.user_type),
+    userType: asText(dto.user_type || dto.profile_type),
+    profileType: asText(dto.profile_type),
+    teacherCode: maybeText(dto.teacher_code),
     roles: Array.isArray(dto.roles)
       ? dto.roles.map((item) => {
+          if (typeof item === "string") {
+            return {id: item, name: item};
+          }
+
           const role = asRecord(item);
-          return {id: asText(role.id), name: asText(role.name)};
+          return {
+            id: asText(role.id || role.code || role.name),
+            name: asText(role.name || role.code),
+            code: maybeText(role.code) ?? undefined,
+            description: maybeText(role.description) ?? undefined,
+          };
         })
       : [],
+    createdAt: maybeText(dto.created_at),
+    updatedAt: maybeText(dto.updated_at),
   };
 }
 
@@ -73,7 +89,12 @@ export function roleListFromDto(value: unknown): SchoolRole[] {
   return Array.isArray(value)
     ? value.map((item) => {
         const dto = asRecord(item);
-        return {id: asText(dto.id), name: asText(dto.name)};
+        return {
+          id: asText(dto.id || dto.code || dto.name),
+          name: asText(dto.name || dto.code),
+          code: maybeText(dto.code) ?? undefined,
+          description: maybeText(dto.description) ?? undefined,
+        };
       })
     : [];
 }
@@ -82,7 +103,12 @@ export function permissionListFromDto(value: unknown): SchoolPermission[] {
   return Array.isArray(value)
     ? value.map((item) => {
         const dto = asRecord(item);
-        return {code: asText(dto.code)};
+        return {
+          code: asText(dto.code),
+          description: maybeText(dto.description) ?? undefined,
+          resource: maybeText(dto.resource) ?? undefined,
+          action: maybeText(dto.action) ?? undefined,
+        };
       })
     : [];
 }
@@ -96,16 +122,17 @@ export function effectivePermissionsFromDto(value: unknown): SchoolEffectivePerm
     permissionsDetail: Array.isArray(dto.permissions_detail)
       ? dto.permissions_detail.map((item) => {
           const detail = asRecord(item);
-        return {
-          code: asText(detail.code),
-          source: asText(detail.source),
-          roleName: typeof detail.role_name === "string" || Array.isArray(detail.role_name)
-              ? (detail.role_name as string | string[])
-              : undefined,
+          return {
+            code: asText(detail.code),
+            source: asText(detail.source),
+            roleName:
+              typeof detail.role_name === "string" || Array.isArray(detail.role_name)
+                ? (detail.role_name as string | string[])
+                : undefined,
             overrideId: maybeText(detail.override_id) ?? undefined,
-        };
-      })
-    : [],
+          };
+        })
+      : [],
   };
 }
 
@@ -210,12 +237,18 @@ export function documentOverviewFromDto(value: unknown): SchoolDocumentOverview 
     overdueReplies: asNumber(dto.overdue_replies),
     archived: asNumber(dto.archived),
     byStatus: asRecordOfNumber(dto.by_status),
+    recentActivity: Array.isArray(dto.recent_activity) ? dto.recent_activity.map(overviewActivityFromDto) : [],
   };
 }
 
 export function documentFromDto(value: unknown): SchoolDocument {
   const dto = asRecord(value);
+  const category = resolveEntityRecord(dto.category);
+  const sourceParty = resolveEntityRecord(dto.source_party);
+  const targetParty = resolveEntityRecord(dto.target_party);
   const attachments = Array.isArray(dto.attachments) ? dto.attachments.map(attachmentFromDto) : [];
+  const relatedDocuments = Array.isArray(dto.related_documents) ? dto.related_documents.map(relatedDocumentFromDto) : [];
+
   return {
     id: asText(dto.id),
     direction: asText(dto.direction),
@@ -225,28 +258,38 @@ export function documentFromDto(value: unknown): SchoolDocument {
     title: asText(dto.title),
     subject: asText(dto.subject),
     documentNumber: asText(dto.document_number),
+    sequenceNumber: asNullableNumber(dto.sequence_number),
     documentDate: asText(dto.document_date),
     registeredAt: asText(dto.registered_at),
-    categoryId: maybeText(dto.category),
-    categoryName: maybeText(asRecord(dto.category_detail).name ?? asRecord(dto.category).name),
-    sourcePartyId: maybeText(dto.source_party),
-    sourcePartyName: maybeText(asRecord(dto.source_party_detail).name),
-    targetPartyId: maybeText(dto.target_party),
-    targetPartyName: maybeText(asRecord(dto.target_party_detail).name),
+    categoryId: maybeText(category.id ?? dto.category),
+    categoryName: maybeText(category.name),
+    categoryCode: maybeText(category.code),
+    sourcePartyId: maybeText(sourceParty.id ?? dto.source_party),
+    sourcePartyName: maybeText(sourceParty.name),
+    targetPartyId: maybeText(targetParty.id ?? dto.target_party),
+    targetPartyName: maybeText(targetParty.name),
     sourceName: asText(dto.source_name),
     targetName: asText(dto.target_name),
     needsReply: Boolean(dto.needs_reply),
     replyDueDate: maybeText(dto.reply_due_date),
+    repliedAt: maybeText(dto.replied_at),
+    relatedDocumentId: maybeText(dto.related_document),
+    relationType: maybeText(dto.relation_type),
+    academicYearId: maybeText(dto.academic_year),
     notes: asText(dto.notes),
     tags: Array.isArray(dto.tags) ? dto.tags.filter((item): item is string => typeof item === "string") : [],
-    attachmentsCount: asNumber(dto.attachments_count),
+    attachmentsCount: asNumber(dto.attachments_count ?? attachments.length),
     attachments,
+    relatedDocuments,
+    createdBy: actorFromDto(dto.created_by),
+    updatedBy: actorFromDto(dto.updated_by),
+    createdAt: maybeText(dto.created_at),
+    updatedAt: maybeText(dto.updated_at),
   };
 }
 
 export function attachmentFromDto(value: unknown): SchoolDocumentAttachment {
   const dto = asRecord(value);
-  const uploadedBy = asRecord(dto.uploaded_by);
   return {
     id: asText(dto.id),
     originalFilename: asText(dto.original_filename),
@@ -254,15 +297,9 @@ export function attachmentFromDto(value: unknown): SchoolDocumentAttachment {
     mimeType: asText(dto.mime_type),
     isPrimary: Boolean(dto.is_primary),
     downloadUrl: asText(dto.download_url),
-    previewUrl: asText(dto.preview_url),
+    previewUrl: asText(dto.preview_url || dto.download_url),
     createdAt: asText(dto.created_at),
-    uploadedBy: Object.keys(uploadedBy).length
-      ? {
-          id: asText(uploadedBy.id),
-          fullName: asText(uploadedBy.full_name),
-          email: asText(uploadedBy.email),
-        }
-      : null,
+    uploadedBy: actorFromDto(dto.uploaded_by),
   };
 }
 
@@ -402,6 +439,56 @@ export function kpiReportFromDto(value: unknown): SchoolKpiReport {
   };
 }
 
+function overviewActivityFromDto(value: unknown): SchoolDocumentOverviewActivity {
+  const dto = asRecord(value);
+  return {
+    documentId: asText(dto.document_id),
+    action: asText(dto.action),
+    title: asText(dto.title),
+    createdAt: asText(dto.created_at),
+  };
+}
+
+function relatedDocumentFromDto(value: unknown): SchoolDocumentRelated {
+  const dto = asRecord(value);
+  return {
+    id: asText(dto.id),
+    title: asText(dto.title),
+    documentNumber: asText(dto.document_number),
+    relationType: maybeText(dto.relation_type),
+    direction: maybeText(dto.direction),
+    status: maybeText(dto.status),
+  };
+}
+
+function actorFromDto(value: unknown): SchoolActorSummary | null {
+  const dto = asRecord(value);
+  if (Object.keys(dto).length === 0) {
+    return null;
+  }
+
+  const id = asText(dto.id);
+  const fullName = asText(dto.full_name);
+
+  if (!id && !fullName) {
+    return null;
+  }
+
+  return {
+    id,
+    fullName,
+    email: maybeText(dto.email) ?? undefined,
+  };
+}
+
+function resolveEntityRecord(value: unknown) {
+  if (typeof value === "string") {
+    return {id: value};
+  }
+
+  return asRecord(value);
+}
+
 function asRecord(value: unknown): UnknownRecord {
   return typeof value === "object" && value !== null ? (value as UnknownRecord) : {};
 }
@@ -418,9 +505,11 @@ function asNumber(value: unknown): number {
   return typeof value === "number" ? value : 0;
 }
 
+function asNullableNumber(value: unknown): number | null {
+  return typeof value === "number" ? value : null;
+}
+
 function asRecordOfNumber(value: unknown): Record<string, number> {
   const dto = asRecord(value);
-  return Object.fromEntries(
-    Object.entries(dto).flatMap(([key, entry]) => (typeof entry === "number" ? [[key, entry]] : [])),
-  );
+  return Object.fromEntries(Object.entries(dto).flatMap(([key, entry]) => (typeof entry === "number" ? [[key, entry]] : [])));
 }

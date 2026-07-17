@@ -31,6 +31,7 @@ import {
   subjectFromDto,
   ticketListFromDto,
   userFromDto,
+  attachmentFromDto,
 } from "../mappers/school";
 import type {
   PaginatedResult,
@@ -45,6 +46,7 @@ import type {
   SchoolDashboardOverview,
   SchoolDocument,
   SchoolDocumentActivity,
+  SchoolDocumentAttachment,
   SchoolDocumentCategory,
   SchoolDocumentOverview,
   SchoolEffectivePermissions,
@@ -63,6 +65,7 @@ import type {
 } from "../types/contracts";
 
 type QueryValue = string | number | boolean | undefined | null;
+type DocumentCollection = "all" | "outgoing" | "incoming" | "circulars" | "needsReply";
 
 export async function fetchSchoolOverview(): Promise<ApiResult<SchoolDashboardOverview>> {
   const result = await browserApi<unknown>("school", schoolEndpoints.dashboard.overview);
@@ -90,31 +93,83 @@ export async function fetchSchoolUsers(query: Record<string, QueryValue>): Promi
   return result.success ? {success: true, data: mapPaginated(result.data, userFromDto)} : result;
 }
 
-export async function createSchoolUser(payload: Record<string, unknown>): Promise<ApiResult<null>> {
-  const result = await browserApi<unknown>("school", schoolEndpoints.users.create, {
+export async function fetchSchoolUser(id: string): Promise<ApiResult<SchoolUser>> {
+  const result = await browserApi<unknown>("school", schoolEndpoints.users.detail(id));
+  return result.success ? {success: true, data: userFromDto(result.data)} : result;
+}
+
+export async function createSchoolUser(payload: Record<string, unknown>): Promise<ApiResult<{id: string}>> {
+  const result = await browserApi<Record<string, unknown>>("school", schoolEndpoints.users.create, {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify(payload),
   });
-  return result.success ? {success: true, data: null} : result;
+
+  if (!result.success) return result;
+
+  return {
+    success: true,
+    data: {id: typeof result.data.id === "string" ? result.data.id : ""},
+  };
 }
 
-export async function updateSchoolUser(id: string, payload: Record<string, unknown>): Promise<ApiResult<null>> {
-  const result = await browserApi<unknown>("school", schoolEndpoints.users.update(id), {
+export async function updateSchoolUser(id: string, payload: Record<string, unknown>): Promise<ApiResult<{id: string; fullName: string}>> {
+  const result = await browserApi<Record<string, unknown>>("school", schoolEndpoints.users.update(id), {
     method: "PATCH",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify(payload),
   });
-  return result.success ? {success: true, data: null} : result;
+
+  if (!result.success) return result;
+
+  return {
+    success: true,
+    data: {
+      id: typeof result.data.id === "string" ? result.data.id : id,
+      fullName: typeof result.data.full_name === "string" ? result.data.full_name : "",
+    },
+  };
 }
 
-export async function resetSchoolUserPassword(id: string, newPassword: string, reason: string): Promise<ApiResult<null>> {
-  const result = await browserApi<unknown>("school", schoolEndpoints.users.reset(id), {
+async function changeSchoolUserActivation(id: string, action: "enable" | "disable"): Promise<ApiResult<SchoolUser>> {
+  const result = await browserApi<unknown>("school", schoolEndpoints.users[action](id), {
+    method: "POST",
+  });
+
+  return result.success ? {success: true, data: userFromDto(result.data)} : result;
+}
+
+export function disableSchoolUser(id: string): Promise<ApiResult<SchoolUser>> {
+  return changeSchoolUserActivation(id, "disable");
+}
+
+export function enableSchoolUser(id: string): Promise<ApiResult<SchoolUser>> {
+  return changeSchoolUserActivation(id, "enable");
+}
+
+export async function resetSchoolUserPassword(id: string, newPassword: string, reason: string): Promise<ApiResult<{detail: string; temporaryPassword: string | null}>> {
+  const result = await browserApi<Record<string, unknown>>("school", schoolEndpoints.users.reset(id), {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({new_password: newPassword, reason}),
   });
-  return result.success ? {success: true, data: null} : result;
+
+  if (!result.success) return result;
+
+  return {
+    success: true,
+    data: {
+      detail: typeof result.data.detail === "string" ? result.data.detail : "",
+      temporaryPassword:
+        typeof result.data.temporary_password === "string"
+          ? result.data.temporary_password
+          : typeof result.data.new_password === "string"
+            ? result.data.new_password
+            : typeof result.data.temp_password === "string"
+              ? result.data.temp_password
+              : null,
+    },
+  };
 }
 
 export async function fetchSchoolRoles(): Promise<ApiResult<SchoolRole[]>> {
@@ -241,22 +296,18 @@ export async function fetchQrEntries(query: Record<string, QueryValue>): Promise
 }
 
 export async function regenerateQr(ownerType: string, ownerId: string, reason: string): Promise<ApiResult<{token: string | null}>> {
-  const path =
-    ownerType === "TEACHER"
-      ? schoolEndpoints.attendance.regenerateTeacher(ownerId)
-      : ownerType === "STAFF"
-        ? schoolEndpoints.attendance.regenerateStaff(ownerId)
-        : schoolEndpoints.attendance.regenerateStudent(ownerId);
+  const path = ownerType === "TEACHER"
+    ? schoolEndpoints.attendance.regenerateTeacher(ownerId)
+    : ownerType === "STAFF"
+      ? schoolEndpoints.attendance.regenerateStaff(ownerId)
+      : schoolEndpoints.attendance.regenerateStudent(ownerId);
   const result = await browserApi<Record<string, unknown>>("school", path, {
     method: "POST",
     headers: {"Content-Type": "application/json", "Idempotency-Key": crypto.randomUUID()},
     body: JSON.stringify({reason}),
   });
   if (!result.success) return result;
-  return {
-    success: true,
-    data: {token: typeof result.data.token === "string" ? result.data.token : null},
-  };
+  return {success: true, data: {token: typeof result.data.token === "string" ? result.data.token : null}};
 }
 
 export async function revokeQr(id: string, reason: string): Promise<ApiResult<null>> {
@@ -283,17 +334,43 @@ export async function fetchDocumentOverview(): Promise<ApiResult<SchoolDocumentO
 }
 
 export async function fetchDocuments(query: Record<string, QueryValue>): Promise<ApiResult<PaginatedResult<SchoolDocument>>> {
-  const result = await browserApi<unknown>("school", schoolEndpoints.documents.list(query));
-  return result.success ? {success: true, data: mapPaginated(result.data, documentFromDto)} : result;
+  return fetchDocumentCollection("all", query);
 }
 
-export async function createDocument(payload: Record<string, unknown>): Promise<ApiResult<null>> {
-  const result = await browserApi<unknown>("school", schoolEndpoints.documents.create, {
+export async function fetchOutgoingDocuments(query: Record<string, QueryValue>): Promise<ApiResult<PaginatedResult<SchoolDocument>>> {
+  return fetchDocumentCollection("outgoing", query);
+}
+
+export async function fetchIncomingDocuments(query: Record<string, QueryValue>): Promise<ApiResult<PaginatedResult<SchoolDocument>>> {
+  return fetchDocumentCollection("incoming", query);
+}
+
+export async function fetchCircularDocuments(query: Record<string, QueryValue>): Promise<ApiResult<PaginatedResult<SchoolDocument>>> {
+  return fetchDocumentCollection("circulars", query);
+}
+
+export async function fetchNeedsReplyDocuments(query: Record<string, QueryValue>): Promise<ApiResult<PaginatedResult<SchoolDocument>>> {
+  return fetchDocumentCollection("needsReply", query);
+}
+
+export async function createDocument(payload: Record<string, unknown>): Promise<ApiResult<{id: string; documentNumber: string; sequenceNumber: number | null; status: string}>> {
+  const result = await browserApi<Record<string, unknown>>("school", schoolEndpoints.documents.create, {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify(payload),
   });
-  return result.success ? {success: true, data: null} : result;
+
+  if (!result.success) return result;
+
+  return {
+    success: true,
+    data: {
+      id: typeof result.data.id === "string" ? result.data.id : "",
+      documentNumber: typeof result.data.document_number === "string" ? result.data.document_number : "",
+      sequenceNumber: typeof result.data.sequence_number === "number" ? result.data.sequence_number : null,
+      status: typeof result.data.status === "string" ? result.data.status : "",
+    },
+  };
 }
 
 export async function fetchDocument(id: string): Promise<ApiResult<SchoolDocument>> {
@@ -301,21 +378,35 @@ export async function fetchDocument(id: string): Promise<ApiResult<SchoolDocumen
   return result.success ? {success: true, data: documentFromDto(result.data)} : result;
 }
 
-export async function updateDocument(id: string, payload: Record<string, unknown>): Promise<ApiResult<SchoolDocument>> {
-  const result = await browserApi<unknown>("school", schoolEndpoints.documents.update(id), {
+export async function updateDocument(id: string, payload: Record<string, unknown>): Promise<ApiResult<{id: string; updatedAt: string | null; priority: string | null}>> {
+  const result = await browserApi<Record<string, unknown>>("school", schoolEndpoints.documents.update(id), {
     method: "PATCH",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify(payload),
   });
-  return result.success ? {success: true, data: documentFromDto(result.data)} : result;
+
+  if (!result.success) return result;
+
+  return {
+    success: true,
+    data: {
+      id: typeof result.data.id === "string" ? result.data.id : id,
+      updatedAt: typeof result.data.updated_at === "string" ? result.data.updated_at : null,
+      priority: typeof result.data.priority === "string" ? result.data.priority : null,
+    },
+  };
 }
 
-export async function deleteDocument(id: string): Promise<ApiResult<null>> {
-  const result = await browserApi<unknown>("school", schoolEndpoints.documents.delete(id), {method: "DELETE"});
+export async function deleteDocument(id: string, reason = ""): Promise<ApiResult<null>> {
+  const result = await browserApi<unknown>("school", schoolEndpoints.documents.delete(id), {
+    method: "DELETE",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({reason}),
+  });
   return result.success ? {success: true, data: null} : result;
 }
 
-export async function uploadDocumentAttachment(id: string, file: File, isPrimary = false): Promise<ApiResult<null>> {
+export async function uploadDocumentAttachment(id: string, file: File, isPrimary = false): Promise<ApiResult<SchoolDocumentAttachment>> {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("is_primary", String(isPrimary));
@@ -323,44 +414,81 @@ export async function uploadDocumentAttachment(id: string, file: File, isPrimary
     method: "POST",
     body: formData,
   });
-  return result.success ? {success: true, data: null} : result;
+  return result.success ? {success: true, data: attachmentFromDto(result.data)} : result;
 }
 
-export async function linkDocument(id: string, relatedDocument: string, relationType: string): Promise<ApiResult<null>> {
-  const result = await browserApi<unknown>("school", schoolEndpoints.documents.link(id), {
+export async function fetchDocumentAttachments(id: string): Promise<ApiResult<SchoolDocumentAttachment[]>> {
+  const result = await browserApi<unknown>("school", schoolEndpoints.documents.attachmentsList(id));
+  return result.success ? {success: true, data: Array.isArray(result.data) ? result.data.map(attachmentFromDto) : []} : result;
+}
+
+export async function linkDocument(id: string, relatedDocument: string, relationType: string): Promise<ApiResult<{id: string; relatedDocument: string; relationType: string}>> {
+  const result = await browserApi<Record<string, unknown>>("school", schoolEndpoints.documents.link(id), {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({related_document: relatedDocument, relation_type: relationType}),
   });
-  return result.success ? {success: true, data: null} : result;
+
+  if (!result.success) return result;
+
+  return {
+    success: true,
+    data: {
+      id: typeof result.data.id === "string" ? result.data.id : id,
+      relatedDocument: typeof result.data.related_document === "string" ? result.data.related_document : relatedDocument,
+      relationType: typeof result.data.relation_type === "string" ? result.data.relation_type : relationType,
+    },
+  };
 }
 
-export async function createReplyDocument(id: string, payload: Record<string, unknown>): Promise<ApiResult<null>> {
-  const result = await browserApi<unknown>("school", schoolEndpoints.documents.reply(id), {
+export async function createReplyDocument(id: string, payload: Record<string, unknown>): Promise<ApiResult<{id: string; documentNumber: string; relatedDocument: string | null; relationType: string | null}>> {
+  const result = await browserApi<Record<string, unknown>>("school", schoolEndpoints.documents.reply(id), {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify(payload),
   });
-  return result.success ? {success: true, data: null} : result;
+
+  if (!result.success) return result;
+
+  return {
+    success: true,
+    data: {
+      id: typeof result.data.id === "string" ? result.data.id : "",
+      documentNumber: typeof result.data.document_number === "string" ? result.data.document_number : "",
+      relatedDocument: typeof result.data.related_document === "string" ? result.data.related_document : null,
+      relationType: typeof result.data.relation_type === "string" ? result.data.relation_type : null,
+    },
+  };
 }
 
-export async function markDocumentSent(id: string): Promise<ApiResult<null>> {
-  const result = await browserApi<unknown>("school", schoolEndpoints.documents.markSent(id), {method: "POST"});
-  return result.success ? {success: true, data: null} : result;
+export async function markDocumentSent(id: string, sentAt = new Date().toISOString(), reason = ""): Promise<ApiResult<{id: string; status: string | null}>> {
+  const result = await browserApi<Record<string, unknown>>("school", schoolEndpoints.documents.markSent(id), {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({sent_at: sentAt, reason}),
+  });
+  if (!result.success) return result;
+  return {success: true, data: {id: typeof result.data.id === "string" ? result.data.id : id, status: typeof result.data.status === "string" ? result.data.status : null}};
 }
 
-export async function markDocumentReceived(id: string): Promise<ApiResult<null>> {
-  const result = await browserApi<unknown>("school", schoolEndpoints.documents.markReceived(id), {method: "POST"});
-  return result.success ? {success: true, data: null} : result;
+export async function markDocumentReceived(id: string, receivedAt = new Date().toISOString(), reason = ""): Promise<ApiResult<{id: string; status: string | null}>> {
+  const result = await browserApi<Record<string, unknown>>("school", schoolEndpoints.documents.markReceived(id), {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({received_at: receivedAt, reason}),
+  });
+  if (!result.success) return result;
+  return {success: true, data: {id: typeof result.data.id === "string" ? result.data.id : id, status: typeof result.data.status === "string" ? result.data.status : null}};
 }
 
-export async function archiveDocument(id: string, reason: string): Promise<ApiResult<null>> {
-  const result = await browserApi<unknown>("school", schoolEndpoints.documents.archive(id), {
+export async function archiveDocument(id: string, reason: string): Promise<ApiResult<{id: string; status: string | null}>> {
+  const result = await browserApi<Record<string, unknown>>("school", schoolEndpoints.documents.archive(id), {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({reason}),
   });
-  return result.success ? {success: true, data: null} : result;
+  if (!result.success) return result;
+  return {success: true, data: {id: typeof result.data.id === "string" ? result.data.id : id, status: typeof result.data.status === "string" ? result.data.status : null}};
 }
 
 export async function fetchDocumentActivity(id: string, query: Record<string, QueryValue>): Promise<ApiResult<PaginatedResult<SchoolDocumentActivity>>> {
@@ -494,4 +622,19 @@ export async function fetchAtRiskStudents(query: Record<string, QueryValue>): Pr
 export async function fetchKpiReport(): Promise<ApiResult<SchoolKpiReport>> {
   const result = await browserApi<unknown>("school", schoolEndpoints.reports.kpis);
   return result.success ? {success: true, data: kpiReportFromDto(result.data)} : result;
+}
+
+async function fetchDocumentCollection(collection: DocumentCollection, query: Record<string, QueryValue>): Promise<ApiResult<PaginatedResult<SchoolDocument>>> {
+  const path = collection === "outgoing"
+    ? schoolEndpoints.documents.outgoing(query)
+    : collection === "incoming"
+      ? schoolEndpoints.documents.incoming(query)
+      : collection === "circulars"
+        ? schoolEndpoints.documents.circulars(query)
+        : collection === "needsReply"
+          ? schoolEndpoints.documents.needsReply(query)
+          : schoolEndpoints.documents.list(query);
+
+  const result = await browserApi<unknown>("school", path);
+  return result.success ? {success: true, data: mapPaginated(result.data, documentFromDto)} : result;
 }

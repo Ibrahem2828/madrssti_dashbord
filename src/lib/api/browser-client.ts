@@ -8,6 +8,13 @@ export async function browserApi<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<ApiResult<T>> {
+  return sameOriginApi<T>(gatewayHref(portal, path), init);
+}
+
+export async function sameOriginApi<T>(
+  href: string,
+  init: RequestInit = {},
+): Promise<ApiResult<T>> {
   const csrf = document.cookie
     .split("; ")
     .find((item) => item.startsWith("madrasti_csrf="))
@@ -21,7 +28,7 @@ export async function browserApi<T>(
   let response: Response;
 
   try {
-    response = await fetch(gatewayHref(portal, path), {
+    response = await fetch(href, {
       ...init,
       headers,
       credentials: "same-origin",

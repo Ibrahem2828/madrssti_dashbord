@@ -8,6 +8,8 @@ import {can, canAll, canAny} from "@/lib/permissions/permission-utils";
 type AuthContextValue = {
   session: PortalSession;
   loading: boolean;
+  /** A safe, BFF-provided session failure. It never contains backend payloads or tokens. */
+  sessionError: {code: string; requestId?: string} | null;
   refreshSession: () => Promise<void>;
   logout: () => Promise<void>;
   can: (permission: string) => boolean;
@@ -23,6 +25,14 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function readStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function readSessionError(value: unknown, requestId?: string): {code: string; requestId?: string} {
+  if (isRecord(value) && isRecord(value.error) && typeof value.error.code === "string") {
+    return {code: value.error.code, ...(typeof value.requestId === "string" ? {requestId: value.requestId} : requestId ? {requestId} : {})};
+  }
+
+  return {code: "SESSION_UNAVAILABLE", ...(requestId ? {requestId} : {})};
 }
 
 function parsePortalSession(value: unknown): PortalSession {
@@ -82,21 +92,26 @@ function readCsrfCookie(): string | null {
 export function AuthProvider({children}: {children: ReactNode}) {
   const [session, setSession] = useState<PortalSession>(emptySession);
   const [loading, setLoading] = useState(true);
+  const [sessionError, setSessionError] = useState<{code: string; requestId?: string} | null>(null);
 
   const refreshSession = useCallback(async () => {
     setLoading(true);
 
     try {
       const response = await fetch("/api/auth/session", {credentials: "same-origin"});
+      const payload: unknown = await response.json().catch(() => null);
+
       if (!response.ok) {
         setSession(emptySession);
+        setSessionError(readSessionError(payload, response.headers.get("x-request-id") ?? undefined));
         return;
       }
 
-      const payload: unknown = await response.json();
       setSession(parsePortalSession(payload));
+      setSessionError(null);
     } catch {
       setSession(emptySession);
+      setSessionError({code: "SESSION_UNAVAILABLE"});
     } finally {
       setLoading(false);
     }
@@ -118,6 +133,7 @@ export function AuthProvider({children}: {children: ReactNode}) {
       // Local authenticated state must still be cleared even when transport fails.
     } finally {
       setSession(emptySession);
+      setSessionError(null);
       setLoading(false);
     }
   }, []);
@@ -126,13 +142,14 @@ export function AuthProvider({children}: {children: ReactNode}) {
     () => ({
       session,
       loading,
+      sessionError,
       refreshSession,
       logout,
       can: (permission) => can(session.permissions, permission),
       canAny: (permissions) => canAny(session.permissions, permissions),
       canAll: (permissions) => canAll(session.permissions, permissions),
     }),
-    [loading, logout, refreshSession, session],
+    [loading, logout, refreshSession, session, sessionError],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

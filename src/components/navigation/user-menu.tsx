@@ -1,6 +1,6 @@
 "use client";
 
-import {ChevronDown, LogOut} from "lucide-react";
+import {ChevronDown, LogOut, UserRoundPen} from "lucide-react";
 import {useEffect, useId, useRef, useState} from "react";
 import {useTranslations} from "next-intl";
 
@@ -12,11 +12,13 @@ export function UserMenu({
   fullName,
   email,
   portalLabel,
+  onManageAccount,
   onLogout,
 }: {
   fullName: string;
   email: string;
   portalLabel: string;
+  onManageAccount: () => void;
   onLogout: () => Promise<void>;
 }) {
   const t = useTranslations("common");
@@ -86,6 +88,19 @@ export function UserMenu({
             <Badge className="mt-2">{portalLabel}</Badge>
           </div>
           <div className="mt-4 border-t pt-4">
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full justify-start"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                onManageAccount();
+              }}
+            >
+              <UserRoundPen className="h-4 w-4" aria-hidden="true" />
+              {t("manageAccount")}
+            </Button>
             <Button
               type="button"
               variant="ghost"

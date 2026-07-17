@@ -563,6 +563,14 @@ export function CentralSchoolDetailScreen({schoolId}: {schoolId: string}) {
           {adminState?.admin ? `${adminState.admin.fullName} • ${adminState.admin.email}` : t("noAdmin")}
         </p>
       </Card>
+      <Can permission={CENTRAL_PERMISSIONS.schoolUsersRead}>
+        <Card title={t("usersTitle")}>
+          <p className="mb-3 text-sm text-muted-foreground">{t("usersDescription")}</p>
+          <Link href={`/central/schools/${schoolId}/users`} className="inline-flex min-h-11 items-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+            {t("manageUsers")}
+          </Link>
+        </Card>
+      </Can>
       {!adminState?.hasAdmin ? (
         <Can permission={CENTRAL_PERMISSIONS.schoolAdminCreate}>
           <Card title={t("createAdminTitle")}>
@@ -600,6 +608,244 @@ export function CentralSchoolDetailScreen({schoolId}: {schoolId: string}) {
           <Button type="button" className="mt-3" onClick={() => setTempPassword(null)}>
             {common("close")}
           </Button>
+        </Card>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Central IT provisions the single primary administrator for a school through
+ * the verified `create-admin` endpoint. The backend owns the PRINCIPAL role
+ * and its effective permissions; the browser never submits arbitrary role or
+ * school identifiers outside the selected, server-validated school path.
+ */
+export function CentralSchoolAdministratorsScreen() {
+  const t = useTranslations("centralSchoolAdministrators");
+  const common = useTranslations("common");
+  const access = usePortalSession();
+  const [data, setData] = useState<PaginatedResult<CentralSchool> | null>(null);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [selectedSchoolId, setSelectedSchoolId] = useState<string | null>(null);
+  const [temporaryPassword, setTemporaryPassword] = useState<string | null>(null);
+  const [form, setForm] = useState({fullName: "", email: "", phone: "", tempPassword: ""});
+
+  const canReadSchools = access.can(CENTRAL_PERMISSIONS.schoolsRead);
+  const canCreateAdministrator = access.can(CENTRAL_PERMISSIONS.schoolAdminCreate);
+  const selectedSchool = data?.results.find((school) => school.id === selectedSchoolId) ?? null;
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const result = await fetchCentralSchools({page: "1", search: search || undefined});
+
+    if (!result.success) {
+      setError(result.error.message);
+      setLoading(false);
+      return;
+    }
+
+    setData(result.data);
+    setLoading(false);
+  }, [search]);
+
+  useEffect(() => {
+    if (access.loading || !canReadSchools) {
+      return;
+    }
+    void load();
+  }, [access.loading, canReadSchools, load]);
+
+  const provision = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!selectedSchool || !canCreateAdministrator) {
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+    const result = await createCentralAdmin(selectedSchool.id, form);
+    setSaving(false);
+
+    if (!result.success) {
+      setError(result.error.message);
+      return;
+    }
+
+    setTemporaryPassword(result.data.tempPassword);
+    setForm({fullName: "", email: "", phone: "", tempPassword: ""});
+    setSelectedSchoolId(null);
+    setMessage(t("created"));
+    await load();
+  };
+
+  if (!hasCapability("central.schoolAdmin")) {
+    return <UnsupportedState />;
+  }
+
+  if (access.loading) {
+    return <LoadingBlock label={common("loading")} />;
+  }
+
+  if (!canReadSchools) {
+    return <ForbiddenState />;
+  }
+
+  return (
+    <div className="space-y-6">
+      <PageHeader title={t("title")} description={t("description")} />
+      {message ? <InlineSuccess message={message} /> : null}
+      {error ? <InlineError message={error} /> : null}
+
+      <Card title={t("directoryTitle")}>
+        <div className="flex flex-col gap-3 md:flex-row">
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder={t("searchPlaceholder")}
+            aria-label={t("searchLabel")}
+          />
+          <Button type="button" onClick={() => void load()}>
+            {t("search")}
+          </Button>
+        </div>
+
+        {loading ? <div className="mt-4"><LoadingBlock label={common("loading")} /></div> : null}
+        {data ? (
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-start text-sm">
+              <thead className="bg-muted">
+                <tr>
+                  <HeaderCell>{t("school")}</HeaderCell>
+                  <HeaderCell>{t("status")}</HeaderCell>
+                  <HeaderCell>{t("administrator")}</HeaderCell>
+                  <HeaderCell>{common("actions")}</HeaderCell>
+                </tr>
+              </thead>
+              <tbody>
+                {data.results.map((school) => {
+                  const isEligible = school.isActive && !school.admin;
+                  return (
+                    <tr key={school.id} className="border-t">
+                      <BodyCell>
+                        <Link href={`/central/schools/${school.id}`} className="font-medium text-primary hover:underline">
+                          {school.name}
+                        </Link>
+                        <p className="mt-1 text-xs text-muted-foreground">{school.code}</p>
+                      </BodyCell>
+                      <BodyCell>{school.isActive ? t("active") : t("inactive")}</BodyCell>
+                      <BodyCell>
+                        {school.admin ? (
+                          <div>
+                            <p>{school.admin.fullName}</p>
+                            <p className="text-xs text-muted-foreground">{school.admin.email}</p>
+                          </div>
+                        ) : (
+                          t("noAdministrator")
+                        )}
+                      </BodyCell>
+                      <BodyCell>
+                        {school.admin ? (
+                          <Link href={`/central/schools/${school.id}`} className="text-primary hover:underline">
+                            {t("manage")}
+                          </Link>
+                        ) : (
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={!isEligible || !canCreateAdministrator}
+                            onClick={() => {
+                              setError(null);
+                              setMessage(null);
+                              setSelectedSchoolId(school.id);
+                            }}
+                          >
+                            {t("createAction")}
+                          </Button>
+                        )}
+                      </BodyCell>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+      </Card>
+
+      {selectedSchool ? (
+        <Card title={t("provisionTitle")}>
+          <div className="mb-5 rounded-lg border bg-muted p-4 text-sm">
+            <p className="font-medium">{selectedSchool.name}</p>
+            <p className="mt-1 text-muted-foreground">{t("singleSchoolScope")}</p>
+            <p className="mt-3 font-medium">{t("accessProfileTitle")}</p>
+            <p className="mt-1 text-muted-foreground">{t("accessProfileDescription")}</p>
+            <p className="mt-2 text-muted-foreground">{t("accessProfileLimitation")}</p>
+          </div>
+
+          <form className="grid gap-4 md:grid-cols-2" onSubmit={(event) => void provision(event)}>
+            <div>
+              <label className="mb-1 block text-sm font-medium" htmlFor="central-admin-full-name">{t("fullName")}</label>
+              <Input
+                id="central-admin-full-name"
+                value={form.fullName}
+                onChange={(event) => setForm({...form, fullName: event.target.value})}
+                autoComplete="name"
+                required
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium" htmlFor="central-admin-email">{t("email")}</label>
+              <Input
+                id="central-admin-email"
+                type="email"
+                value={form.email}
+                onChange={(event) => setForm({...form, email: event.target.value})}
+                autoComplete="email"
+                required
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium" htmlFor="central-admin-phone">{t("phone")}</label>
+              <Input
+                id="central-admin-phone"
+                type="tel"
+                value={form.phone}
+                onChange={(event) => setForm({...form, phone: event.target.value})}
+                autoComplete="tel"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium" htmlFor="central-admin-password">{t("temporaryPassword")}</label>
+              <Input
+                id="central-admin-password"
+                type="password"
+                value={form.tempPassword}
+                onChange={(event) => setForm({...form, tempPassword: event.target.value})}
+                autoComplete="new-password"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">{t("passwordOptional")}</p>
+            </div>
+            <div className="flex flex-wrap gap-3 md:col-span-2">
+              <Button type="submit" loading={saving}>{t("createAction")}</Button>
+              <Button type="button" className="bg-secondary text-secondary-foreground" onClick={() => setSelectedSchoolId(null)}>
+                {common("cancel")}
+              </Button>
+            </div>
+          </form>
+        </Card>
+      ) : null}
+
+      {temporaryPassword ? (
+        <Card title={t("temporaryPassword")}>
+          <p className="rounded-md border bg-muted p-3 font-mono text-sm">{temporaryPassword}</p>
+          <p className="mt-2 text-sm text-muted-foreground">{t("temporaryPasswordHint")}</p>
+          <Button type="button" className="mt-3" onClick={() => setTemporaryPassword(null)}>{common("close")}</Button>
         </Card>
       ) : null}
     </div>

@@ -6,7 +6,7 @@ import {usePathname, useSearchParams} from "next/navigation";
 import {useTranslations} from "next-intl";
 
 import {Can} from "@/components/auth/can";
-import {ForbiddenState, UnsupportedState} from "@/components/feedback/states";
+import {ErrorState, ForbiddenState, UnsupportedState} from "@/components/feedback/states";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Textarea} from "@/components/ui/textarea";
@@ -88,7 +88,7 @@ export function SchoolDocumentsScreen() {
   const access = usePortalSession();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [filters, setFilters] = useState(() => readFilters(searchParams, ["search", "status", "direction", "page"]));
+  const [filters, setFilters] = useState(() => readFilters(searchParams, ["search", "status", "direction", "document_type", "needs_reply", "page"]));
   const [overview, setOverview] = useState<SchoolDocumentOverview | null>(null);
   const [documents, setDocuments] = useState<PaginatedResult<SchoolDocument> | null>(null);
   const [categories, setCategories] = useState<SchoolDocumentCategory[]>([]);
@@ -420,7 +420,7 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
   });
   const [replyForm, setReplyForm] = useState({title: "", subject: "", documentDate: "", priority: "NORMAL", notes: ""});
   const [linkForm, setLinkForm] = useState({relatedDocument: "", relationType: "RELATED"});
-  const [archiveReason, setArchiveReason] = useState("");
+  const [actionReason, setActionReason] = useState("");
 
   const statusLabel = (value: string) => translateEnum(value, statusT, statusTranslationKeys);
   const directionLabel = (value: string) => translateEnum(value, directionT, directionTranslationKeys);
@@ -488,7 +488,6 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
       setError(result.error.message);
       return;
     }
-    setDocument(result.data);
     setMessage(t("updated"));
     await load();
   };
@@ -513,8 +512,8 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
   };
 
   const run = async (action: "sent" | "received" | "delete" | "archive" | "reply" | "link") => {
-    if (action === "archive" && !archiveReason.trim()) {
-      setError(validation("required"));
+    if ((action === "sent" || action === "received" || action === "delete" || action === "archive") && !actionReason.trim()) {
+      setError(t("auditReasonRequired"));
       return;
     }
     if (action === "reply" && (!replyForm.title.trim() || !replyForm.subject.trim() || !replyForm.documentDate)) {
@@ -549,13 +548,13 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
     setMessage(null);
     const result =
       action === "sent"
-        ? await markDocumentSent(documentId)
+        ? await markDocumentSent(documentId, new Date().toISOString(), actionReason)
         : action === "received"
-          ? await markDocumentReceived(documentId)
+          ? await markDocumentReceived(documentId, new Date().toISOString(), actionReason)
           : action === "delete"
-            ? await deleteDocument(documentId)
+            ? await deleteDocument(documentId, actionReason)
             : action === "archive"
-              ? await archiveDocument(documentId, archiveReason)
+              ? await archiveDocument(documentId, actionReason)
               : action === "reply"
                 ? await createReplyDocument(documentId, {
                     title: replyForm.title,
@@ -583,6 +582,9 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
                 ? t("replyCreated")
                 : t("linked"),
     );
+    if (action === "sent" || action === "received" || action === "delete" || action === "archive") {
+      setActionReason("");
+    }
     await load();
   };
 
@@ -595,7 +597,7 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
   }
 
   if (error || !document) {
-    return <ForbiddenState />;
+    return <ErrorState onRetry={() => void load()} />;
   }
 
   return (
@@ -688,6 +690,8 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
         <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-3 rounded-md border p-4">
               <p className="font-medium">{t("statusActions")}</p>
+              <Input value={actionReason} onChange={(event) => setActionReason(event.target.value)} placeholder={t("auditReason")} />
+              <p className="text-xs text-muted-foreground">{t("auditReasonDescription")}</p>
               <div className="flex flex-wrap gap-2">
                 <Can permission={SCHOOL_PERMISSIONS.outgoingMarkSent}>
                   <Button type="button" loading={pending} onClick={() => void run("sent")} disabled={document.direction !== "OUTGOING"}>
@@ -709,7 +713,7 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
           <Can permission={SCHOOL_PERMISSIONS.documentsArchive}>
             <div className="space-y-3 rounded-md border p-4">
               <p className="font-medium">{common("archive")}</p>
-              <Input value={archiveReason} onChange={(event) => setArchiveReason(event.target.value)} placeholder={common("reason")} required />
+              <p className="text-xs text-muted-foreground">{t("archiveReasonDescription")}</p>
               <Button type="button" loading={pending} onClick={() => void run("archive")}>
                 {common("archive")}
               </Button>

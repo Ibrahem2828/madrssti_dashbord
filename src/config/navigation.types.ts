@@ -11,6 +11,10 @@ export type NavigationIconName =
   | "attendance"
   | "documents"
   | "archive"
+  | "incoming"
+  | "outgoing"
+  | "reply"
+  | "collections"
   | "reports"
   | "notifications"
   | "settings";

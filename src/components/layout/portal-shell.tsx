@@ -21,6 +21,10 @@ import {
   UserRoundCog,
   X,
   Archive,
+  Inbox,
+  Send,
+  Reply,
+  FolderTree,
   type LucideIcon,
 } from "lucide-react";
 import {useMemo, useState} from "react";
@@ -35,6 +39,7 @@ import {NotificationLink} from "@/components/navigation/notification-link";
 import {SchoolSwitcher} from "@/components/navigation/school-switcher";
 import {ThemeSwitcher} from "@/components/navigation/theme-switcher";
 import {UserMenu} from "@/components/navigation/user-menu";
+import {AccountProfileDialog} from "@/features/account/components/account-profile-dialog";
 import {SCHOOL_PERMISSIONS} from "@/config/permissions";
 import type {Portal} from "@/config/routes";
 import type {NavigationIconName, NavigationItem} from "@/config/navigation.types";
@@ -55,6 +60,10 @@ const iconRegistry: Record<NavigationIconName, LucideIcon> = {
   attendance: ClipboardCheck,
   documents: Mail,
   archive: Archive,
+  incoming: Inbox,
+  outgoing: Send,
+  reply: Reply,
+  collections: FolderTree,
   reports: FileSpreadsheet,
   notifications: Bell,
   settings: Settings,
@@ -94,14 +103,21 @@ export function PortalShell({
   const routeLocale: AppLocale = locale === "en" ? "en" : "ar";
   const pathname = usePathname();
   const router = useRouter();
-  const {logout, can, session} = usePortalSession();
+  const {logout, refreshSession, can, session, loading} = usePortalSession();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const visibleNavigation = useMemo(() => navigation.filter((item) => canAccess(item, can)), [can, navigation]);
 
   const exit = async () => {
     await logout();
+    router.replace("/login", {locale: routeLocale});
+  };
+
+  const completePasswordChange = async () => {
+    setAccountOpen(false);
+    await refreshSession();
     router.replace("/login", {locale: routeLocale});
   };
 
@@ -165,7 +181,7 @@ export function PortalShell({
   );
 
   const breadcrumbs = buildBreadcrumbs(pathname, t);
-  const userLabel = session.user?.fullName ?? session.user?.email ?? t("common.none");
+  const userLabel = session.user?.fullName ?? session.user?.email ?? (loading ? t("common.loading") : t("common.none"));
 
   return (
     <div className={cn("min-h-screen lg:grid", collapsed ? "lg:grid-cols-[5rem_1fr]" : "lg:grid-cols-[17.5rem_1fr]")}>
@@ -210,6 +226,7 @@ export function PortalShell({
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     <Badge variant="accent">{t(`navigation.${portal}`)}</Badge>
                     {portal === "school" && session.activeSchool ? <Badge>{session.activeSchool.name}</Badge> : null}
+                    {portal === "school" && session.user ? <Badge>{t(`schoolAccess.${schoolAccessKey(session.roles)}`)}</Badge> : null}
                   </div>
                 </div>
               </div>
@@ -219,7 +236,13 @@ export function PortalShell({
                 <LanguageSwitcher />
                 <ThemeSwitcher />
                 {session.user ? (
-                  <UserMenu fullName={session.user.fullName} email={session.user.email} portalLabel={t(`navigation.${portal}`)} onLogout={exit} />
+                  <UserMenu
+                    fullName={session.user.fullName}
+                    email={session.user.email}
+                    portalLabel={t(`navigation.${portal}`)}
+                    onManageAccount={() => setAccountOpen(true)}
+                    onLogout={exit}
+                  />
                 ) : null}
               </div>
             </div>
@@ -245,8 +268,23 @@ export function PortalShell({
       </div>
 
       <CommandPalette items={commandItems} open={commandOpen} onOpenChange={setCommandOpen} />
+      <AccountProfileDialog open={accountOpen} onOpenChange={setAccountOpen} onPasswordChanged={completePasswordChange} />
     </div>
   );
+}
+
+function schoolAccessKey(roles: readonly string[]): "principal" | "administrator" | "staff" {
+  const normalizedRoles = roles.map((role) => role.trim().toUpperCase());
+
+  if (normalizedRoles.includes("PRINCIPAL")) {
+    return "principal";
+  }
+
+  if (normalizedRoles.includes("SCHOOL_IT") || normalizedRoles.includes("SCHOOLIT") || normalizedRoles.includes("ADMINSTAFF")) {
+    return "administrator";
+  }
+
+  return "staff";
 }
 
 function buildBreadcrumbs(pathname: string, t: ReturnType<typeof useTranslations>) {
@@ -265,13 +303,31 @@ function buildBreadcrumbs(pathname: string, t: ReturnType<typeof useTranslations
       return;
     }
 
+    const previousSegment = segments[index - 1] ?? "";
+
+    if (segment === "new" && previousSegment === "users") {
+      breadcrumbs.push({href: currentPath, label: t("navigation.newUser")});
+      return;
+    }
+
+    if (segment === "new" && previousSegment === "correspondence") {
+      breadcrumbs.push({href: currentPath, label: t("navigation.newDocument")});
+      return;
+    }
+
     const labelMap: Record<string, string> = {
       schools: t("navigation.schools"),
       health: t("navigation.health"),
       tickets: t("navigation.tickets"),
       audit: t("navigation.audit"),
       policies: t("navigation.policies"),
+      "school-administrators": t("navigation.schoolAdministrators"),
       users: t("navigation.users"),
+      outgoing: t("navigation.outgoing"),
+      incoming: t("navigation.incoming"),
+      internal: t("navigation.internal"),
+      circulars: t("navigation.circulars"),
+      "needs-reply": t("navigation.needsReply"),
       academic: t("navigation.academic"),
       attendance: t("navigation.attendance"),
       correspondence: t("navigation.correspondence"),

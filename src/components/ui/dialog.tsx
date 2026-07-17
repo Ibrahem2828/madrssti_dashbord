@@ -60,6 +60,33 @@ export function Dialog({
       if (event.key === "Escape") {
         event.preventDefault();
         onOpenChange(false);
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const focusableElements = Array.from(
+        node.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      const first = focusableElements[0];
+      const last = focusableElements[focusableElements.length - 1];
+
+      if (!first || !last) {
+        event.preventDefault();
+        node.focus();
+        return;
+      }
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
       }
     };
 
@@ -81,7 +108,7 @@ export function Dialog({
         aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
         className={cn(
-          "max-h-[85vh] w-full overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-2xl",
+          "max-h-[85vh] w-full overflow-hidden rounded-2xl border bg-card text-card-foreground shadow-2xl sm:max-h-[90vh]",
           sizeClassName[size],
         )}
         onClick={(event) => event.stopPropagation()}
@@ -107,7 +134,7 @@ export function Dialog({
             <X className="h-4 w-4" aria-hidden="true" />
           </Button>
         </div>
-        <div className="max-h-[calc(85vh-9rem)] overflow-y-auto px-6 py-5">{children}</div>
+        <div className="max-h-[calc(85vh-9rem)] overflow-y-auto px-6 py-5 sm:max-h-[calc(90vh-9rem)]">{children}</div>
         {footer ? <div className="border-t px-6 py-4">{footer}</div> : null}
       </div>
     </div>

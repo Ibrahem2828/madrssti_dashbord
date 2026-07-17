@@ -15,6 +15,13 @@ export type SchoolDashboardOverview = {
 
 export type SchoolDashboardKpis = Record<string, string | number>;
 
+export type SchoolRole = {
+  id: string;
+  name: string;
+  code?: string;
+  description?: string;
+};
+
 export type SchoolUser = {
   id: string;
   email: string;
@@ -22,16 +29,18 @@ export type SchoolUser = {
   fullName: string;
   isActive: boolean;
   userType: string;
-  roles: Array<{id: string; name: string}>;
-};
-
-export type SchoolRole = {
-  id: string;
-  name: string;
+  profileType: string;
+  teacherCode: string | null;
+  roles: SchoolRole[];
+  createdAt: string | null;
+  updatedAt: string | null;
 };
 
 export type SchoolPermission = {
   code: string;
+  description?: string;
+  resource?: string;
+  action?: string;
 };
 
 export type EffectivePermissionDetail = {
@@ -114,6 +123,13 @@ export type SchoolQrEntry = {
   validTo: string;
 };
 
+export type SchoolDocumentOverviewActivity = {
+  documentId: string;
+  action: string;
+  title: string;
+  createdAt: string;
+};
+
 export type SchoolDocumentOverview = {
   total: number;
   outgoing: number;
@@ -123,6 +139,22 @@ export type SchoolDocumentOverview = {
   overdueReplies: number;
   archived: number;
   byStatus: Record<string, number>;
+  recentActivity: SchoolDocumentOverviewActivity[];
+};
+
+export type SchoolActorSummary = {
+  id: string;
+  fullName: string;
+  email?: string;
+};
+
+export type SchoolDocumentRelated = {
+  id: string;
+  title: string;
+  documentNumber: string;
+  relationType: string | null;
+  direction: string | null;
+  status: string | null;
 };
 
 export type SchoolDocument = {
@@ -134,10 +166,12 @@ export type SchoolDocument = {
   title: string;
   subject: string;
   documentNumber: string;
+  sequenceNumber: number | null;
   documentDate: string;
   registeredAt: string;
   categoryId: string | null;
   categoryName: string | null;
+  categoryCode: string | null;
   sourcePartyId: string | null;
   sourcePartyName: string | null;
   targetPartyId: string | null;
@@ -146,10 +180,19 @@ export type SchoolDocument = {
   targetName: string;
   needsReply: boolean;
   replyDueDate: string | null;
+  repliedAt: string | null;
+  relatedDocumentId: string | null;
+  relationType: string | null;
+  academicYearId: string | null;
   notes: string;
   tags: string[];
   attachmentsCount: number;
   attachments: SchoolDocumentAttachment[];
+  relatedDocuments: SchoolDocumentRelated[];
+  createdBy: SchoolActorSummary | null;
+  updatedBy: SchoolActorSummary | null;
+  createdAt: string | null;
+  updatedAt: string | null;
 };
 
 export type SchoolDocumentAttachment = {
@@ -161,11 +204,7 @@ export type SchoolDocumentAttachment = {
   downloadUrl: string;
   previewUrl: string;
   createdAt: string;
-  uploadedBy: {
-    id: string;
-    fullName: string;
-    email: string;
-  } | null;
+  uploadedBy: SchoolActorSummary | null;
 };
 
 export type SchoolDocumentActivity = {

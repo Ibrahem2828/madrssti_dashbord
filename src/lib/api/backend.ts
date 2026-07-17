@@ -50,7 +50,7 @@ export function getBackendRuntimeInfo() {
 }
 
 export function buildBackendOriginUrl(path = "/"): URL {
-  const apiUrl = new URL(getServerEnv().apiBaseUrl);
+  const backendBaseUrl = getServerEnv().backendBaseUrl;
 
   if (!path.startsWith("/")) {
     throw new Error("Backend origin path must start with '/'.");
@@ -60,7 +60,7 @@ export function buildBackendOriginUrl(path = "/"): URL {
     throw new Error("Absolute backend origin URLs are not allowed.");
   }
 
-  return new URL(path, `${apiUrl.origin}/`);
+  return new URL(path, `${backendBaseUrl}/`);
 }
 
 export function buildBackendUrl(path: string): URL {

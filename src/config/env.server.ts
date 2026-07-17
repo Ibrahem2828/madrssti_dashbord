@@ -1,22 +1,50 @@
 import "server-only";
 
 type ServerEnv = {
+  backendBaseUrl: string;
   apiBaseUrl: string;
   appUrl?: string;
   cookieSecure: boolean;
 };
 
 let cachedEnv: ServerEnv | null = null;
+let cachedBackendBaseUrl: string | null = null;
 let cachedApiBaseUrl: string | null = null;
 let cachedCookieSecure: boolean | null = null;
 let cachedAppUrl: string | undefined;
 let appUrlResolved = false;
 
-function readApiBaseUrl(): string {
-  const value = process.env.API_BASE_URL;
+function readBackendBaseUrl(): string | null {
+  const value = process.env.BACKEND_BASE_URL?.trim();
 
   if (!value) {
-    throw new Error("API_BASE_URL must be configured on the server.");
+    return null;
+  }
+
+  let backendBaseUrl: URL;
+
+  try {
+    backendBaseUrl = new URL(value);
+  } catch {
+    throw new Error("BACKEND_BASE_URL must be an absolute URL.");
+  }
+
+  if (!/^https?:$/.test(backendBaseUrl.protocol)) {
+    throw new Error("BACKEND_BASE_URL must use HTTP or HTTPS.");
+  }
+
+  if (backendBaseUrl.pathname !== "/" && backendBaseUrl.pathname !== "") {
+    throw new Error("BACKEND_BASE_URL must be an origin without an API path.");
+  }
+
+  return backendBaseUrl.origin;
+}
+
+function readApiBaseUrl(backendBaseUrl: string | null): string {
+  const value = process.env.API_BASE_URL?.trim() ?? (backendBaseUrl ? new URL("/api/v1", backendBaseUrl).toString() : "");
+
+  if (!value) {
+    throw new Error("Configure BACKEND_BASE_URL or the legacy API_BASE_URL on the server.");
   }
 
   let apiBaseUrl: URL;
@@ -35,6 +63,10 @@ function readApiBaseUrl(): string {
 
   if (normalizedPath !== "/api/v1") {
     throw new Error("API_BASE_URL must include the exact /api/v1 base path.");
+  }
+
+  if (backendBaseUrl && apiBaseUrl.origin !== backendBaseUrl) {
+    throw new Error("API_BASE_URL and BACKEND_BASE_URL must use the same backend origin.");
   }
 
   return apiBaseUrl.toString().replace(/\/$/, "");
@@ -76,12 +108,22 @@ export function getServerEnv(): ServerEnv {
   }
 
   cachedEnv = {
+    get backendBaseUrl() {
+      if (cachedBackendBaseUrl) {
+        return cachedBackendBaseUrl;
+      }
+
+      const explicitBackendBaseUrl = readBackendBaseUrl();
+      const apiBaseUrl = readApiBaseUrl(explicitBackendBaseUrl);
+      cachedBackendBaseUrl = explicitBackendBaseUrl ?? new URL(apiBaseUrl).origin;
+      return cachedBackendBaseUrl;
+    },
     get apiBaseUrl() {
       if (cachedApiBaseUrl) {
         return cachedApiBaseUrl;
       }
 
-      cachedApiBaseUrl = readApiBaseUrl();
+      cachedApiBaseUrl = readApiBaseUrl(cachedBackendBaseUrl ?? readBackendBaseUrl());
       return cachedApiBaseUrl;
     },
     get appUrl() {
@@ -114,6 +156,9 @@ export function getServerEnv(): ServerEnv {
 }
 
 export const env = {
+  get backendBaseUrl() {
+    return getServerEnv().backendBaseUrl;
+  },
   get apiBaseUrl() {
     return getServerEnv().apiBaseUrl;
   },

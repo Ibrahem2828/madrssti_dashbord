@@ -15,6 +15,9 @@ export function setAuthCookies(tokens: {access: string; refresh: string}, portal
   jar.set(COOKIE_NAMES.access, tokens.access, {...base, httpOnly: true, maxAge: 60 * 15});
   jar.set(COOKIE_NAMES.refresh, tokens.refresh, {...base, httpOnly: true, maxAge: 60 * 60 * 24 * 14});
   jar.set(COOKIE_NAMES.portal, portal, {...base, httpOnly: true, maxAge: 60 * 60 * 24 * 14});
+  // A school context is valid only after the new backend session has been read.
+  // Clearing this prevents a previous account's school from being reused.
+  jar.set(COOKIE_NAMES.activeSchool, "", {...base, httpOnly: true, maxAge: 0});
 }
 
 export function clearAuthCookies(): void {

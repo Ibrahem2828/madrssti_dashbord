@@ -1,0 +1,56 @@
+[backend:login] {"requestId":"73a39fa8-b04d-4afe-b7d2-1407e7638f37","portal":"central","method":"POST","endpointPath":"/central/auth/login","timeoutMs":15000,"elapsedMs":1145,"backendStatus":401,"code":"AUTH_FAILED","backendRequestId":"73a39fa8-b04d-4afe-b7d2-1407e7638f37"}
+ ⨯ ./src/lib/api/backend-dispatcher.ts:5:1
+Module not found: Can't resolve 'undici'
+[0m [90m 3 |[39m [36mimport[39m [32m"server-only"[39m[33m;[39m[0m
+[0m [90m 4 |[39m[0m
+[0m[31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m { [33mAgent[39m } [36mfrom[39m [32m"undici"[39m[33m;[39m[0m
+[0m [90m   |[39m [31m[1m^[22m[39m[0m
+[0m [90m 6 |[39m[0m
+[0m [90m 7 |[39m [36mexport[39m [36mconst[39m backendDispatcher [33m=[39m [36mnew[39m [33mAgent[39m({[0m
+[0m [90m 8 |[39m   connect[33m:[39m {[0m
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/lib/api/backend.ts
+./src/features/auth/services/login-server.ts
+./src/app/api/auth/central/login/route.ts
+ ⨯ ./src/lib/api/backend-dispatcher.ts:5:1
+Module not found: Can't resolve 'undici'
+[0m [90m 3 |[39m [36mimport[39m [32m"server-only"[39m[33m;[39m[0m
+[0m [90m 4 |[39m[0m
+[0m[31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m { [33mAgent[39m } [36mfrom[39m [32m"undici"[39m[33m;[39m[0m
+[0m [90m   |[39m [31m[1m^[22m[39m[0m
+[0m [90m 6 |[39m[0m
+[0m [90m 7 |[39m [36mexport[39m [36mconst[39m backendDispatcher [33m=[39m [36mnew[39m [33mAgent[39m({[0m
+[0m [90m 8 |[39m   connect[33m:[39m {[0m
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/lib/api/backend.ts
+./src/features/auth/services/login-server.ts
+./src/app/api/auth/central/login/route.ts
+ ⨯ ./src/lib/api/backend-dispatcher.ts:5:1
+Module not found: Can't resolve 'undici'
+[0m [90m 3 |[39m [36mimport[39m [32m"server-only"[39m[33m;[39m[0m
+[0m [90m 4 |[39m[0m
+[0m[31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m { [33mAgent[39m } [36mfrom[39m [32m"undici"[39m[33m;[39m[0m
+[0m [90m   |[39m [31m[1m^[22m[39m[0m
+[0m [90m 6 |[39m[0m
+[0m [90m 7 |[39m [36mexport[39m [36mconst[39m backendDispatcher [33m=[39m [36mnew[39m [33mAgent[39m({[0m
+[0m [90m 8 |[39m   connect[33m:[39m {[0m
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/lib/api/backend.ts
+./src/features/auth/services/login-server.ts
+./src/app/api/auth/central/login/route.ts
+[backend:login] {"requestId":"66363d48-c66b-45d4-ab31-c59e82c55690","portal":"central","method":"POST","endpointPath":"/central/auth/login","timeoutMs":15000,"elapsedMs":1677,"backendStatus":401,"code":"AUTH_FAILED","backendRequestId":"66363d48-c66b-45d4-ab31-c59e82c55690"}
+[backend:login] {"requestId":"4e7c10be-efe8-43f6-86df-8bdd1ea1bd19","portal":"central","method":"POST","endpointPath":"/central/auth/login","timeoutMs":15000,"elapsedMs":892,"backendStatus":401,"code":"AUTH_FAILED","backendRequestId":"4e7c10be-efe8-43f6-86df-8bdd1ea1bd19"}
+[backend:login] {"requestId":"3dd4b0db-3bec-4da0-9b70-5678a1618482","portal":"central","method":"POST","endpointPath":"/central/auth/login","timeoutMs":15000,"elapsedMs":246,"backendStatus":401,"code":"AUTH_FAILED","backendRequestId":"3dd4b0db-3bec-4da0-9b70-5678a1618482"}
+[backend:login] {"requestId":"701634e9-99da-46a1-b0cc-698c0e532e3d","portal":"central","method":"POST","endpointPath":"/central/auth/login","timeoutMs":15000,"elapsedMs":246,"backendStatus":401,"code":"AUTH_FAILED","backendRequestId":"701634e9-99da-46a1-b0cc-698c0e532e3d"}
+[backend:login] {"requestId":"41183a27-b9b0-4c28-b6da-9ba6a015616d","portal":"central","method":"POST","endpointPath":"/central/auth/login","timeoutMs":15000,"elapsedMs":135,"backendStatus":401,"code":"AUTH_FAILED","backendRequestId":"41183a27-b9b0-4c28-b6da-9ba6a015616d"}
+[backend:login] {"requestId":"7f085da8-b27e-4fba-9701-098da06a630e","portal":"central","method":"POST","endpointPath":"/central/auth/login","timeoutMs":15000,"elapsedMs":132,"backendStatus":401,"code":"AUTH_FAILED","backendRequestId":"7f085da8-b27e-4fba-9701-098da06a630e"}
+[backend:login] {"requestId":"4bcc9686-86e1-42df-8cbe-8e48be965029","portal":"school","method":"POST","endpointPath":"/auth/login","timeoutMs":15000,"elapsedMs":537,"backendStatus":429,"code":"RATE_LIMITED","backendRequestId":"4bcc9686-86e1-42df-8cbe-8e48be965029"}

@@ -1,0 +1,55 @@
+# School Permission Matrix
+
+## Users and RBAC
+
+- `ADMIN_USERS_READ`
+- `ADMIN_USERS_CREATE`
+- `ADMIN_USERS_UPDATE`
+- `ADMIN_USERS_DISABLE_ENABLE`
+- `ADMIN_USERS_RESET_PASSWORD`
+- `ADMIN_RBAC_ROLES_READ`
+- `ADMIN_RBAC_PERMS_READ`
+- `ADMIN_RBAC_VIEW_EFFECTIVE_PERMS`
+- `ADMIN_RBAC_ASSIGN_ROLE`
+- `ADMIN_RBAC_GRANT_PERMISSION`
+- `ADMIN_RBAC_REVOKE_PERMISSION`
+
+## Correspondence core
+
+- `DOCUMENTS_READ`
+- `DOCUMENTS_CREATE`
+- `DOCUMENTS_UPDATE`
+- `DOCUMENTS_DELETE`
+- `DOCUMENTS_ARCHIVE`
+- `DOCUMENTS_DOWNLOAD`
+- `DOCUMENTS_PREVIEW`
+- `DOCUMENTS_LINK`
+- `DOCUMENTS_MANAGE_CATEGORIES`
+- `DOCUMENTS_MANAGE_PARTIES`
+
+## Specialized document scopes
+
+- `OUTGOING_READ`
+- `OUTGOING_CREATE`
+- `OUTGOING_UPDATE`
+- `OUTGOING_MARK_SENT`
+- `INCOMING_READ`
+- `INCOMING_CREATE`
+- `INCOMING_UPDATE`
+- `INCOMING_MARK_RECEIVED`
+- `CIRCULARS_READ`
+- `CIRCULARS_CREATE`
+- `CIRCULARS_REPLY`
+- `FINANCIAL_DOCUMENTS_READ`
+- `FINANCIAL_DOCUMENTS_MANAGE`
+- `ADMIN_DOCUMENTS_READ`
+- `ADMIN_DOCUMENTS_MANAGE`
+- `GUIDANCE_DOCUMENTS_READ`
+- `GUIDANCE_DOCUMENTS_MANAGE`
+
+## UI implementation notes
+
+- Navigation uses permission codes, never translated role labels.
+- Direct permission grant/revoke requires an audit reason in the UI.
+- Effective permissions are displayed from backend-derived results.
+- Unsupported actions remain hidden when the backend capability is not implemented.

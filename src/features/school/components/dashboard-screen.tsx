@@ -1,11 +1,13 @@
 "use client";
 
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import {useTranslations} from "next-intl";
 
-import {ErrorState, UnsupportedState} from "@/components/feedback/states";
+import {ErrorState, ForbiddenState, UnavailableState, UnsupportedState} from "@/components/feedback/states";
 import {hasCapability} from "@/config/capabilities";
+import {SCHOOL_PERMISSIONS} from "@/config/permissions";
 import {statusTranslationKeys, translateEnum} from "@/lib/presentation/domain-enums";
+import {usePortalSession} from "@/providers/auth-provider";
 import {fetchDocumentOverview, fetchSchoolKpis, fetchSchoolOverview} from "../services/school-api";
 import {Card, LoadingBlock, MetricCard, PageHeader} from "./common";
 import type {SchoolDashboardKpis, SchoolDashboardOverview, SchoolDocumentOverview} from "../types/contracts";
@@ -14,15 +16,18 @@ export function SchoolDashboardScreen() {
   const t = useTranslations("schoolDashboard");
   const common = useTranslations("common");
   const statusT = useTranslations("status");
+  const access = usePortalSession();
   const [overview, setOverview] = useState<SchoolDashboardOverview | null>(null);
   const [kpis, setKpis] = useState<SchoolDashboardKpis>({});
   const [documents, setDocuments] = useState<SchoolDocumentOverview | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [failure, setFailure] = useState<{code: string; requestId?: string} | null>(null);
+  const canViewDashboard = access.can(SCHOOL_PERMISSIONS.dashboardView);
+  const isPrincipal = access.session.roles.some((role) => role.trim().toUpperCase() === "PRINCIPAL");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
-    setError(null);
+    setFailure(null);
     const [overviewResult, kpiResult, documentResult] = await Promise.all([
       fetchSchoolOverview(),
       fetchSchoolKpis(),
@@ -30,7 +35,7 @@ export function SchoolDashboardScreen() {
     ]);
 
     if (!overviewResult.success) {
-      setError(overviewResult.error.message);
+      setFailure({code: overviewResult.error.code, requestId: overviewResult.requestId});
       setLoading(false);
       return;
     }
@@ -39,11 +44,15 @@ export function SchoolDashboardScreen() {
     setKpis(kpiResult.success ? kpiResult.data : {});
     setDocuments(documentResult.success ? documentResult.data : null);
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
+    if (access.loading || !access.session.activeSchool || !canViewDashboard) {
+      return;
+    }
+
     void load();
-  }, []);
+  }, [access.loading, access.session.activeSchool, canViewDashboard, load]);
 
   const kpiLabels: Record<string, string> = {
     schools_active: t("kpiSchoolsActive"),
@@ -72,12 +81,24 @@ export function SchoolDashboardScreen() {
     return <UnsupportedState />;
   }
 
+  if (access.loading) {
+    return <LoadingBlock label={common("loading")} />;
+  }
+
+  if (!canViewDashboard) {
+    if (isPrincipal) {
+      return <UnavailableState title={t("principalProvisioningTitle")} description={t("principalProvisioningDescription")} />;
+    }
+
+    return <ForbiddenState />;
+  }
+
   if (loading) {
     return <LoadingBlock label={common("loading")} />;
   }
 
-  if (error || !overview) {
-    return <ErrorState onRetry={() => void load()} />;
+  if (failure || !overview) {
+    return <ErrorState onRetry={() => void load()} requestId={failure?.requestId} />;
   }
 
   return (
