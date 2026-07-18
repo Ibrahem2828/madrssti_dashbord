@@ -6,6 +6,7 @@ import {useTranslations} from "next-intl";
 
 import {Badge} from "@/components/ui/badge";
 import {buttonClassName} from "@/components/ui/button";
+import {Tooltip} from "@/components/ui/tooltip";
 import {Link} from "@/i18n/routing";
 import {fetchSchoolNotifications} from "@/features/school/services/school-api";
 
@@ -34,7 +35,8 @@ export function NotificationLink() {
   }, []);
 
   return (
-    <Link href="/school/notifications" className={buttonClassName({variant: "ghost", size: "icon"})} aria-label={t("title")}>
+    <Tooltip content={t("title")}>
+      <Link href="/school/notifications" className={buttonClassName({variant: "ghost", size: "icon"})} aria-label={t("title")}>
       <span className="relative">
         <Bell className="h-4 w-4" aria-hidden="true" />
         {typeof count === "number" && count > 0 ? (
@@ -43,6 +45,7 @@ export function NotificationLink() {
           </Badge>
         ) : null}
       </span>
-    </Link>
+      </Link>
+    </Tooltip>
   );
 }

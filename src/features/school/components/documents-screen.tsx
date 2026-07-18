@@ -1,13 +1,14 @@
 "use client";
 
 import type {FormEvent} from "react";
-import {useCallback, useEffect, useState} from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 import {usePathname, useSearchParams} from "next/navigation";
 import {useTranslations} from "next-intl";
 
 import {Can} from "@/components/auth/can";
 import {ErrorState, ForbiddenState, UnsupportedState} from "@/components/feedback/states";
 import {Button} from "@/components/ui/button";
+import {ConfirmDialog} from "@/components/ui/confirm-dialog";
 import {Input} from "@/components/ui/input";
 import {Textarea} from "@/components/ui/textarea";
 import {gatewayHref} from "@/lib/api/browser-client";
@@ -16,6 +17,8 @@ import {hasCapability} from "@/config/capabilities";
 import {SCHOOL_PERMISSIONS} from "@/config/permissions";
 import {schoolEndpoints} from "@/config/endpoints.school";
 import {useUnsavedChangesGuard} from "@/hooks/use-unsaved-changes-guard";
+import {DocumentFileUploader, type DocumentFileUploaderHandle} from "@/components/correspondence/document-file-uploader";
+import {DocumentPreviewDialog} from "@/components/correspondence/document-preview-dialog";
 import {
   DOCUMENT_DIRECTIONS,
   DOCUMENT_PRIORITIES,
@@ -97,6 +100,8 @@ export function SchoolDocumentsScreen() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [createdDocumentId, setCreatedDocumentId] = useState<string | null>(null);
+  const uploaderRef = useRef<DocumentFileUploaderHandle | null>(null);
   const [form, setForm] = useState({
     direction: "OUTGOING",
     documentType: "LETTER",
@@ -197,11 +202,15 @@ export function SchoolDocumentsScreen() {
       reply_due_date: form.replyDueDate || undefined,
       notes: form.notes || undefined,
     });
-    setPending(false);
     if (!result.success) {
+      setPending(false);
       setError(result.error.message);
       return;
     }
+    const uploadResult = uploaderRef.current?.hasPendingFiles()
+      ? await uploaderRef.current.uploadPending(result.data.id)
+      : {uploaded: 0, failed: 0, cancelled: 0};
+    setPending(false);
     setForm({
       direction: "OUTGOING",
       documentType: "LETTER",
@@ -218,7 +227,8 @@ export function SchoolDocumentsScreen() {
       replyDueDate: "",
       notes: "",
     });
-    setMessage(t("created"));
+    setCreatedDocumentId(result.data.id);
+    setMessage(uploadResult.failed || uploadResult.cancelled ? t("createdWithAttachmentFailures") : t("created"));
     await load();
   };
 
@@ -334,6 +344,16 @@ export function SchoolDocumentsScreen() {
               </Button>
             </div>
           </form>
+          <Can permission={SCHOOL_PERMISSIONS.documentsUpdate}>
+            <div className="mt-6 border-t pt-6">
+              <h3 className="text-sm font-semibold">{t("attachmentsTitle")}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">{t("attachmentsAfterCreate")}</p>
+              <div className="mt-4">
+                <DocumentFileUploader ref={uploaderRef} />
+              </div>
+            </div>
+          </Can>
+          {createdDocumentId ? <Link href={`/school/correspondence/${createdDocumentId}`} className="mt-4 inline-flex text-sm font-semibold text-primary hover:underline">{t("openCreatedDocument")}</Link> : null}
         </Card>
       </Can>
       {loading ? <LoadingBlock label={common("loading")} /> : null}
@@ -406,6 +426,10 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const attachmentUploaderRef = useRef<DocumentFileUploaderHandle | null>(null);
+  const replyUploaderRef = useRef<DocumentFileUploaderHandle | null>(null);
+  const [previewAttachment, setPreviewAttachment] = useState<{id: string; filename: string} | null>(null);
+  const [confirmation, setConfirmation] = useState<"sent" | "received" | "delete" | "archive" | "reply" | "link" | null>(null);
   const [form, setForm] = useState({
     title: "",
     subject: "",
@@ -492,22 +516,14 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
     await load();
   };
 
-  const upload = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const input = event.currentTarget.elements.namedItem("pdf") as HTMLInputElement | null;
-    const file = input?.files?.[0];
-    if (!file) return;
+  const uploadQueuedAttachments = async () => {
+    if (!attachmentUploaderRef.current?.hasPendingFiles()) return;
     setPending(true);
     setError(null);
     setMessage(null);
-    const result = await uploadDocumentAttachment(documentId, file, false);
+    const result = await attachmentUploaderRef.current.uploadPending(documentId);
     setPending(false);
-    if (!result.success) {
-      setError(result.error.message);
-      return;
-    }
-    event.currentTarget.reset();
-    setMessage(t("attachmentUploaded"));
+    setMessage(result.failed || result.cancelled ? t("attachmentsPartialFailure") : t("attachmentUploaded"));
     await load();
   };
 
@@ -524,25 +540,6 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
       setError(validation("required"));
       return;
     }
-    if (action === "sent" && !window.confirm(confirmT("markDocumentSent"))) {
-      return;
-    }
-    if (action === "received" && !window.confirm(confirmT("markDocumentReceived"))) {
-      return;
-    }
-    if (action === "delete" && !window.confirm(confirmT("deleteDocument"))) {
-      return;
-    }
-    if (action === "archive" && !window.confirm(confirmT("archiveDocument"))) {
-      return;
-    }
-    if (action === "reply" && !window.confirm(confirmT("createReply"))) {
-      return;
-    }
-    if (action === "link" && !window.confirm(confirmT("linkDocument"))) {
-      return;
-    }
-
     setPending(true);
     setError(null);
     setMessage(null);
@@ -569,6 +566,12 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
       setError(result.error.message);
       return;
     }
+    const replyDocumentId = action === "reply" && typeof result.data === "object" && result.data !== null && "id" in result.data && typeof result.data.id === "string"
+      ? result.data.id
+      : null;
+    const replyUpload = replyDocumentId && replyUploaderRef.current?.hasPendingFiles()
+      ? await replyUploaderRef.current.uploadPending(replyDocumentId)
+      : null;
     setMessage(
       action === "sent"
         ? t("markedSent")
@@ -579,7 +582,7 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
             : action === "archive"
               ? t("archived")
               : action === "reply"
-                ? t("replyCreated")
+                ? replyUpload && (replyUpload.failed || replyUpload.cancelled) ? t("replyCreatedWithAttachmentFailures") : t("replyCreated")
                 : t("linked"),
     );
     if (action === "sent" || action === "received" || action === "delete" || action === "archive") {
@@ -587,6 +590,22 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
     }
     await load();
   };
+
+  const requestAction = (action: "sent" | "received" | "delete" | "archive" | "reply" | "link") => {
+    setConfirmation(action);
+  };
+
+  const confirmationDescription = confirmation === "sent"
+    ? confirmT("markDocumentSent")
+    : confirmation === "received"
+      ? confirmT("markDocumentReceived")
+      : confirmation === "delete"
+        ? confirmT("deleteDocument")
+        : confirmation === "archive"
+          ? confirmT("archiveDocument")
+          : confirmation === "reply"
+            ? confirmT("createReply")
+            : confirmT("linkDocument");
 
   if (loading) {
     return <LoadingBlock label={common("loading")} />;
@@ -664,26 +683,34 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
         </Card>
       </Can>
       <Card title={t("attachmentsTitle")}>
-        <form className="flex flex-col gap-3 md:flex-row" onSubmit={(event) => void upload(event)}>
-          <Input name="pdf" type="file" accept="application/pdf" required />
-          <Button type="submit" loading={pending}>
-            {t("uploadPdf")}
-          </Button>
-        </form>
+        <Can permission={SCHOOL_PERMISSIONS.documentsUpdate}>
+          <DocumentFileUploader ref={attachmentUploaderRef} documentId={documentId} />
+          <div className="mt-4 flex justify-end">
+            <Button type="button" loading={pending} onClick={() => void uploadQueuedAttachments()}>
+              {t("uploadPdf")}
+            </Button>
+          </div>
+        </Can>
         <div className="mt-4 space-y-3">
-          {document.attachments.map((attachment) => (
-            <div key={attachment.id} className="rounded-md border p-3">
-              <p className="font-medium">{attachment.originalFilename}</p>
-              <div className="mt-2 flex gap-3 text-sm">
-                <a href={gatewayHref("school", schoolEndpoints.documents.preview(documentId, attachment.id))} target="_blank" rel="noreferrer" className="text-primary">
-                  {common("preview")}
-                </a>
-                <a href={gatewayHref("school", schoolEndpoints.documents.download(documentId, attachment.id))} className="text-primary">
-                  {common("download")}
-                </a>
+          {document.attachments.length ? document.attachments.map((attachment) => (
+            <div key={attachment.id} className="rounded-xl border border-border bg-card p-3">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate font-medium" dir="auto">{attachment.originalFilename}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{attachment.mimeType} · {attachment.fileSize} B</p>
+                  {attachment.isPrimary ? <p className="mt-2 text-xs font-semibold text-primary">{t("officialCopy")}</p> : null}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Can permission={SCHOOL_PERMISSIONS.documentsPreview}>
+                    <Button type="button" variant="outline" size="sm" onClick={() => setPreviewAttachment({id: attachment.id, filename: attachment.originalFilename})}>{common("preview")}</Button>
+                  </Can>
+                  <Can permission={SCHOOL_PERMISSIONS.documentsDownload}>
+                    <a href={gatewayHref("school", schoolEndpoints.documents.download(documentId, attachment.id))} className="inline-flex min-h-9 items-center justify-center rounded-md border border-border bg-background px-3 text-xs font-semibold text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" download>{common("download")}</a>
+                  </Can>
+                </div>
               </div>
             </div>
-          ))}
+          )) : <p className="text-sm text-muted-foreground">{t("attachmentsEmpty")}</p>}
         </div>
       </Card>
       <Card title={t("actionsTitle")}>
@@ -694,17 +721,17 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
               <p className="text-xs text-muted-foreground">{t("auditReasonDescription")}</p>
               <div className="flex flex-wrap gap-2">
                 <Can permission={SCHOOL_PERMISSIONS.outgoingMarkSent}>
-                  <Button type="button" loading={pending} onClick={() => void run("sent")} disabled={document.direction !== "OUTGOING"}>
+                  <Button type="button" loading={pending} onClick={() => requestAction("sent")} disabled={document.direction !== "OUTGOING"}>
                     {t("markSent")}
                   </Button>
                 </Can>
                 <Can permission={SCHOOL_PERMISSIONS.incomingMarkReceived}>
-                  <Button type="button" loading={pending} onClick={() => void run("received")} disabled={document.direction !== "INCOMING"}>
+                  <Button type="button" loading={pending} onClick={() => requestAction("received")} disabled={document.direction !== "INCOMING"}>
                     {t("markReceived")}
                   </Button>
                 </Can>
               <Can permission={SCHOOL_PERMISSIONS.documentsDelete}>
-                <Button type="button" className="bg-danger text-danger-foreground" loading={pending} onClick={() => void run("delete")}>
+                <Button type="button" className="bg-danger text-danger-foreground" loading={pending} onClick={() => requestAction("delete")}>
                   {common("delete")}
                 </Button>
               </Can>
@@ -714,7 +741,7 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
             <div className="space-y-3 rounded-md border p-4">
               <p className="font-medium">{common("archive")}</p>
               <p className="text-xs text-muted-foreground">{t("archiveReasonDescription")}</p>
-              <Button type="button" loading={pending} onClick={() => void run("archive")}>
+              <Button type="button" loading={pending} onClick={() => requestAction("archive")}>
                 {common("archive")}
               </Button>
             </div>
@@ -733,7 +760,10 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
                 ))}
               </select>
               <Textarea value={replyForm.notes} onChange={(event) => setReplyForm({...replyForm, notes: event.target.value})} placeholder={common("notes")} />
-              <Button type="button" loading={pending} onClick={() => void run("reply")}>
+              <Can permission={SCHOOL_PERMISSIONS.documentsUpdate}>
+                <DocumentFileUploader ref={replyUploaderRef} />
+              </Can>
+              <Button type="button" loading={pending} onClick={() => requestAction("reply")}>
                 {t("createReply")}
               </Button>
             </div>
@@ -749,7 +779,7 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
                   </option>
                 ))}
               </select>
-              <Button type="button" loading={pending} onClick={() => void run("link")}>
+              <Button type="button" loading={pending} onClick={() => requestAction("link")}>
                 {t("linkDocument")}
               </Button>
             </div>
@@ -769,6 +799,23 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
           </div>
         </Card>
       ) : null}
+      {previewAttachment ? <DocumentPreviewDialog open={Boolean(previewAttachment)} onOpenChange={(open) => !open && setPreviewAttachment(null)} documentId={documentId} attachmentId={previewAttachment.id} filename={previewAttachment.filename} /> : null}
+      <ConfirmDialog
+        open={Boolean(confirmation)}
+        onOpenChange={(open) => !open && setConfirmation(null)}
+        title={t("actionsTitle")}
+        description={confirmationDescription}
+        confirmLabel={common("save")}
+        cancelLabel={common("cancel")}
+        variant={confirmation === "delete" ? "danger" : "primary"}
+        loading={pending}
+        onConfirm={() => {
+          if (!confirmation) return;
+          const action = confirmation;
+          setConfirmation(null);
+          void run(action);
+        }}
+      />
     </div>
   );
 }

@@ -92,7 +92,42 @@
                        "parties":  "Parties",
                        "reports":  "Reports",
                        "notifications":  "Notifications",
-                       "settings":  "Settings"
+                       "settings":  "Settings",
+                       "groups": {
+                           "main": "Main",
+                           "administration": "Administration",
+                           "academics": "Academic affairs",
+                           "correspondence": "Correspondence and archive",
+                           "followup": "Follow-up",
+                           "system": "System"
+                       },
+                       "descriptions": {
+                           "dashboard": "Review the authorized portal overview.",
+                           "schools": "Manage the authorized school directory.",
+                           "schoolAdministrators": "Provision and manage primary school administrators.",
+                           "health": "Review the available platform health information.",
+                           "tickets": "Review and act on authorized support tickets.",
+                           "audit": "Review authorized operational audit records.",
+                           "policies": "Review the available global policies.",
+                           "users": "Manage school user accounts and delegated access.",
+                           "newUser": "Create an authorized school user account.",
+                           "rolesAndPermissions": "Review school roles and effective permissions.",
+                           "academic": "Configure authorized academic-year information.",
+                           "attendance": "Review attendance and QR workflows.",
+                           "correspondenceOverview": "Review the school correspondence register.",
+                           "newDocument": "Register a new school document.",
+                           "outgoing": "Manage outgoing school documents.",
+                           "incoming": "Manage incoming school documents.",
+                           "internal": "Review internal school documents.",
+                           "circulars": "Review school circulars.",
+                           "needsReply": "Review documents that need a response.",
+                           "archive": "Review archived school documents.",
+                           "categories": "Manage correspondence categories.",
+                           "parties": "Manage correspondence parties.",
+                           "reports": "Review authorized school reports.",
+                           "notifications": "Review school notifications.",
+                           "settings": "Configure authorized school settings."
+                       }
                    },
     "central":  {
                     "title":  "Central IT portal",
@@ -118,7 +153,9 @@
                         "forbidden":  "You do not have access to this area."
                     },
     "theme":  {
-                  "toggle":  "Toggle color theme"
+                  "toggle":  "Toggle color theme",
+                  "activateLight": "Activate light mode",
+                  "activateDark": "Activate dark mode"
               },
     "language":  {
                      "ar":  "Arabic",
@@ -388,6 +425,11 @@
                       "attachmentsTitle":  "Attachments",
                       "attachmentUploaded":  "Attachment uploaded.",
                       "uploadPdf":  "Upload PDF",
+                      "attachmentsAfterCreate": "Files are queued locally and uploaded only after the document is created.",
+                      "createdWithAttachmentFailures": "Document created, but one or more attachments could not be uploaded.",
+                      "openCreatedDocument": "Open document and retry attachments",
+                      "attachmentsPartialFailure": "Some attachments could not be uploaded. Retry only the failed files.",
+                      "attachmentsEmpty": "No attachments are available for this document.",
                       "actionsTitle":  "Document actions",
                       "statusActions":  "Status actions",
                       "auditReason":  "Mandatory audit reason",
@@ -423,6 +465,36 @@
                                            "needs_reply":  "Needs reply"
                                        }
                   },
+    "attachments": {
+                      "title": "Document attachments",
+                      "description": "Only PDF files up to 20 MB are accepted. The server performs final validation.",
+                      "dropzone": "Drop PDF files here or select them",
+                      "selectFile": "Select PDF files",
+                      "upload": "Upload queued files",
+                      "pending": "Waiting to upload",
+                      "uploading": "Uploading",
+                      "success": "Uploaded",
+                      "failed": "Upload failed",
+                      "cancelled": "Upload cancelled",
+                      "validation-failed": "File validation failed",
+                      "officialCopy": "Official copy",
+                      "markPrimary": "Mark as official copy",
+                      "retry": "Retry upload",
+                      "cancel": "Cancel upload",
+                      "remove": "Remove file",
+                      "removeTitle": "Remove queued file",
+                      "removeDescription": "This removes the local queued file only. Uploaded attachments are never removed without a supported server operation.",
+                      "preview": "Preview file",
+                      "previewTitle": "PDF preview",
+                      "previewLoading": "Loading secure preview…",
+                      "previewFailed": "The file preview could not be loaded.",
+                      "previewFrameTitle": "Preview of {filename}",
+                      "download": "Download file",
+                      "fileSize": "Size: {size}",
+                      "invalidType": "Only PDF files are supported.",
+                      "tooLarge": "This file exceeds the maximum size of {maxSize}.",
+                      "duplicate": "An identical file is already in the upload list."
+                   },
     "centralTickets":  {
                            "title":  "Central tickets",
                            "description":  "Central ticket queue with server filters, detail view, assignment, and close workflows.",

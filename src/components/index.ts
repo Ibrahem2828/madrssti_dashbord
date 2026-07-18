@@ -13,6 +13,8 @@ export { HalaqaManagementPanel } from "./halaqat/halaqa-management-panel";
 export { CorrespondenceToolbar } from "./correspondence/correspondence-toolbar";
 export { CreateReplyModal } from "./correspondence/create-reply-modal";
 export { AttachmentUploader } from "./correspondence/attachment-uploader";
+export { DocumentFileUploader } from "./correspondence/document-file-uploader";
+export { DocumentPreviewDialog } from "./correspondence/document-preview-dialog";
 export { HalaqaProgressReport } from "./reports/halaqat-progress-report";
 export { ShariaLeaderboard } from "./reports/sharia-leaderboard";
 export { AttendanceAnalytics } from "./reports/attendance-analytics";

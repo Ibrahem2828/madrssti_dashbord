@@ -2,37 +2,38 @@
 
 import type {ReactNode} from "react";
 import {
+  Archive,
   Bell,
   BookOpen,
   Building2,
+  ChevronDown,
   ClipboardCheck,
   FileSpreadsheet,
+  FolderTree,
   HeartPulse,
+  Inbox,
   LayoutDashboard,
   Mail,
   PanelLeft,
   PanelLeftClose,
+  Reply,
   ScrollText,
   Search,
+  Send,
   Settings,
   ShieldCheck,
   Ticket,
   Users,
   UserRoundCog,
-  X,
-  Archive,
-  Inbox,
-  Send,
-  Reply,
-  FolderTree,
   type LucideIcon,
 } from "lucide-react";
-import {useMemo, useState} from "react";
+import {useEffect, useMemo, useState} from "react";
 import {useLocale, useTranslations} from "next-intl";
 
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {Drawer} from "@/components/ui/drawer";
+import {Tooltip} from "@/components/ui/tooltip";
 import {CommandPalette, useCommandItems} from "@/components/navigation/command-palette";
 import {LanguageSwitcher} from "@/components/navigation/language-switcher";
 import {NotificationLink} from "@/components/navigation/notification-link";
@@ -40,9 +41,10 @@ import {SchoolSwitcher} from "@/components/navigation/school-switcher";
 import {ThemeSwitcher} from "@/components/navigation/theme-switcher";
 import {UserMenu} from "@/components/navigation/user-menu";
 import {AccountProfileDialog} from "@/features/account/components/account-profile-dialog";
+import {hasCapability} from "@/config/capabilities";
 import {SCHOOL_PERMISSIONS} from "@/config/permissions";
+import type {NavigationGroup, NavigationIconName, NavigationItem} from "@/config/navigation.types";
 import type {Portal} from "@/config/routes";
-import type {NavigationIconName, NavigationItem} from "@/config/navigation.types";
 import {Link, usePathname, useRouter, type AppLocale} from "@/i18n/routing";
 import {cn} from "@/lib/utils";
 import {usePortalSession} from "@/providers/auth-provider";
@@ -69,8 +71,14 @@ const iconRegistry: Record<NavigationIconName, LucideIcon> = {
   settings: Settings,
 };
 
+type VisibleNavigationGroup = Omit<NavigationGroup, "items"> & {items: readonly NavigationItem[]};
+
 function canAccess(item: NavigationItem, can: (permission: string) => boolean): boolean {
-  if (!item.enabled) {
+  if (!item.implemented || item.mobileBehavior === "hide") {
+    return false;
+  }
+
+  if (item.capability && !hasCapability(item.capability)) {
     return false;
   }
 
@@ -78,26 +86,30 @@ function canAccess(item: NavigationItem, can: (permission: string) => boolean): 
     return false;
   }
 
-  if (item.anyOf && !item.anyOf.some((permission) => can(permission))) {
+  if (item.permissionsAny && !item.permissionsAny.some((permission) => can(permission))) {
     return false;
   }
 
-  return true;
+  return !item.permissionsAll || item.permissionsAll.every((permission) => can(permission));
 }
 
-function isActivePath(pathname: string, href: string): boolean {
-  return pathname === href || pathname.startsWith(`${href}/`);
+function pathWithoutLocale(pathname: string): string {
+  return pathname.replace(/^\/(?:ar|en)(?=\/|$)/, "") || "/";
 }
 
-export function PortalShell({
-  portal,
-  navigation,
-  children,
-}: {
-  portal: Portal;
-  navigation: readonly NavigationItem[];
-  children: ReactNode;
-}) {
+function routeMatches(pathname: string, matcher: string, exact = false): boolean {
+  const pattern = matcher.replace(/:[^/]+/g, "[^/]+");
+  const expression = exact ? `^${pattern}$` : `^${pattern}(?:/|$)`;
+  return new RegExp(expression).test(pathname);
+}
+
+function isActivePath(pathname: string, item: NavigationItem): boolean {
+  const routePath = pathWithoutLocale(pathname);
+  const matchers = [item.href, ...(item.routeMatchers ?? [])];
+  return matchers.some((matcher) => routeMatches(routePath, matcher, item.exact));
+}
+
+export function PortalShell({portal, navigation, children}: {portal: Portal; navigation: readonly NavigationGroup[]; children: ReactNode}) {
   const t = useTranslations();
   const locale = useLocale();
   const routeLocale: AppLocale = locale === "en" ? "en" : "ar";
@@ -108,7 +120,22 @@ export function PortalShell({
   const [collapsed, setCollapsed] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
-  const visibleNavigation = useMemo(() => navigation.filter((item) => canAccess(item, can)), [can, navigation]);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+
+  const visibleNavigation = useMemo<readonly VisibleNavigationGroup[]>(
+    () => navigation
+      .map((group) => ({...group, items: group.items.filter((item) => canAccess(item, can)).sort((a, b) => a.order - b.order)}))
+      .filter((group) => group.items.length > 0)
+      .sort((a, b) => a.order - b.order),
+    [can, navigation],
+  );
+
+  useEffect(() => {
+    const activeGroups = visibleNavigation.filter((group) => group.items.some((item) => isActivePath(pathname, item)));
+    if (activeGroups.length) {
+      setExpandedGroups((previous) => ({...previous, ...Object.fromEntries(activeGroups.map((group) => [group.id, true]))}));
+    }
+  }, [pathname, visibleNavigation]);
 
   const exit = async () => {
     await logout();
@@ -122,61 +149,114 @@ export function PortalShell({
   };
 
   const commandItems = useCommandItems({
-    navigationItems: visibleNavigation.map(({key, href}) => ({key, href})),
+    navigationItems: visibleNavigation.flatMap((group) => group.items.map(({id, href}) => ({key: id, href}))),
     onLogout: exit,
   });
 
-  const sidebar = (
+  const renderItem = (item: NavigationItem, compact: boolean) => {
+    const active = isActivePath(pathname, item);
+    const Icon = iconRegistry[item.icon];
+    const label = t(item.labelKey);
+    const link = (
+      <Link
+        href={item.href}
+        aria-current={active ? "page" : undefined}
+        aria-label={compact ? label : undefined}
+        className={cn(
+          "flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          active ? "bg-sidebar-active text-accent-foreground" : "text-sidebar-foreground hover:bg-sidebar-border",
+          compact && "justify-center px-0",
+        )}
+        onClick={() => setMobileOpen(false)}
+      >
+        <Icon size={19} aria-hidden className="shrink-0" />
+        {!compact ? <span className="min-w-0 truncate">{label}</span> : null}
+      </Link>
+    );
+
+    return compact ? <Tooltip key={item.id} content={t(item.tooltipKey ?? item.labelKey)}>{link}</Tooltip> : <li key={item.id}>{link}</li>;
+  };
+
+  const sidebar = (compact: boolean, mobile = false) => (
     <div className="flex h-full flex-col">
-      <div className={cn("flex items-center justify-between border-b border-sidebar-border px-4 py-4", collapsed && "lg:justify-center")}>
-        {!collapsed ? (
+      <div className={cn("flex items-center justify-between border-b border-sidebar-border px-4 py-4", compact && "justify-center px-2")}>
+        {!compact ? (
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold">{t(`navigation.${portal}`)}</p>
             <p className="mt-1 text-xs text-sidebar-foreground/70">{t("metadata.title")}</p>
           </div>
         ) : null}
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="text-sidebar-foreground hover:bg-sidebar-border"
-          aria-label={collapsed ? t("accessibility.expandSidebar") : t("accessibility.collapseSidebar")}
-          onClick={() => setCollapsed((value) => !value)}
-        >
-          {collapsed ? <PanelLeft className="h-4 w-4" aria-hidden /> : <PanelLeftClose className="h-4 w-4" aria-hidden />}
-        </Button>
+        {!mobile ? <Tooltip content={t(compact ? "accessibility.expandSidebar" : "accessibility.collapseSidebar")}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="text-sidebar-foreground hover:bg-sidebar-border"
+            aria-label={t(compact ? "accessibility.expandSidebar" : "accessibility.collapseSidebar")}
+            onClick={() => setCollapsed((value) => !value)}
+          >
+            {compact ? <PanelLeft className="h-4 w-4" aria-hidden /> : <PanelLeftClose className="h-4 w-4" aria-hidden />}
+          </Button>
+        </Tooltip> : null}
       </div>
-      <nav aria-label={t("accessibility.primaryNavigation")} className="flex-1 space-y-1 p-3">
-        {visibleNavigation.map((item) => {
-          const active = isActivePath(pathname, item.href);
-          const Icon = iconRegistry[item.icon];
+      <nav aria-label={t("accessibility.primaryNavigation")} className="min-h-0 flex-1 overflow-y-auto p-3">
+        <ul className="space-y-3">
+          {visibleNavigation.map((group) => {
+            const groupOpen = !group.collapsible || expandedGroups[group.id] !== false || group.items.some((item) => isActivePath(pathname, item));
+            const groupControlId = `sidebar-group-${group.id}`;
+            const GroupIcon = iconRegistry[group.icon ?? group.items[0]!.icon];
 
-          return (
-            <Link
-              key={item.key}
-              href={item.href}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors",
-                active
-                  ? "bg-sidebar-active text-accent-foreground"
-                  : "text-sidebar-foreground hover:bg-sidebar-border",
-                collapsed && "justify-center px-0",
-              )}
-              onClick={() => setMobileOpen(false)}
-            >
-              <Icon size={18} aria-hidden className="shrink-0" />
-              {!collapsed ? <span className="truncate">{t(`navigation.${item.key}`)}</span> : null}
-            </Link>
-          );
-        })}
+            if (compact && group.collapsible) {
+              return (
+                <li key={group.id} className="relative">
+                  <Tooltip content={t(group.labelKey)}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label={t(group.labelKey)}
+                      aria-expanded={groupOpen}
+                      aria-controls={groupControlId}
+                      className="w-full text-sidebar-foreground hover:bg-sidebar-border"
+                      onClick={() => setExpandedGroups((previous) => ({...previous, [group.id]: !groupOpen}))}
+                    >
+                      <GroupIcon className="h-5 w-5" aria-hidden />
+                    </Button>
+                  </Tooltip>
+                  {groupOpen ? (
+                    <div id={groupControlId} className="absolute start-full top-0 z-50 ms-3 w-64 rounded-xl border border-sidebar-border bg-sidebar p-2 shadow-xl">
+                      <p className="px-2 pb-2 pt-1 text-xs font-semibold text-sidebar-foreground/70">{t(group.labelKey)}</p>
+                      <ul className="space-y-1">{group.items.map((item) => renderItem(item, false))}</ul>
+                    </div>
+                  ) : null}
+                </li>
+              );
+            }
+
+            return (
+              <li key={group.id}>
+                {!compact ? (
+                  group.collapsible ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="mb-1 w-full justify-between px-2 text-xs font-semibold text-sidebar-foreground/70 hover:bg-sidebar-border hover:text-sidebar-foreground"
+                      aria-expanded={groupOpen}
+                      aria-controls={groupControlId}
+                      onClick={() => setExpandedGroups((previous) => ({...previous, [group.id]: !groupOpen}))}
+                    >
+                      <span>{t(group.labelKey)}</span>
+                      <ChevronDown className={cn("h-4 w-4 transition-transform", groupOpen ? "rotate-0" : "-rotate-90")} aria-hidden />
+                    </Button>
+                  ) : <p className="px-2 pb-1 text-xs font-semibold text-sidebar-foreground/70">{t(group.labelKey)}</p>
+                ) : null}
+                <ul id={groupControlId} className={cn("space-y-1", group.collapsible && !groupOpen && "hidden")}>{group.items.map((item) => renderItem(item, compact))}</ul>
+              </li>
+            );
+          })}
+        </ul>
       </nav>
-      <div className="border-t border-sidebar-border p-3 lg:hidden">
-        <Button type="button" variant="ghost" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-border" onClick={() => setMobileOpen(false)}>
-          <X className="h-4 w-4" aria-hidden />
-          {t("common.close")}
-        </Button>
-      </div>
     </div>
   );
 
@@ -185,25 +265,13 @@ export function PortalShell({
 
   return (
     <div className={cn("min-h-screen lg:grid", collapsed ? "lg:grid-cols-[5rem_1fr]" : "lg:grid-cols-[17.5rem_1fr]")}>
-      <a
-        href="#main-content"
-        className="sr-only z-[100] rounded-md bg-primary px-4 py-2 text-primary-foreground focus:not-sr-only focus:absolute focus:m-3 print:hidden"
-      >
+      <a href="#main-content" className="sr-only z-[100] rounded-md bg-primary px-4 py-2 text-primary-foreground focus:absolute focus:not-sr-only focus:m-3 print:hidden">
         {t("accessibility.skipToContent")}
       </a>
 
-      <aside className="hidden border-e border-sidebar-border bg-sidebar text-sidebar-foreground print:hidden lg:block">{sidebar}</aside>
-
-      <Drawer
-        open={mobileOpen}
-        onOpenChange={setMobileOpen}
-        title={t(`navigation.${portal}`)}
-        description={t("accessibility.primaryNavigation")}
-        closeLabel={t("accessibility.closeNavigation")}
-        side="start"
-        widthClassName="w-full max-w-sm"
-      >
-        {sidebar}
+      <aside className="hidden border-e border-sidebar-border bg-sidebar text-sidebar-foreground print:hidden lg:block">{sidebar(collapsed)}</aside>
+      <Drawer open={mobileOpen} onOpenChange={setMobileOpen} title={t(`navigation.${portal}`)} description={t("accessibility.primaryNavigation")} closeLabel={t("accessibility.closeNavigation")} side="start" widthClassName="w-full max-w-sm">
+        {sidebar(false, true)}
       </Drawer>
 
       <div className="min-w-0 bg-background">
@@ -211,14 +279,13 @@ export function PortalShell({
           <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-2">
-                <Button type="button" variant="ghost" size="icon" className="lg:hidden" aria-label={t("accessibility.openNavigation")} onClick={() => setMobileOpen(true)}>
-                  <PanelLeft className="h-4 w-4" aria-hidden />
-                </Button>
+                <Tooltip content={t("accessibility.openNavigation")}>
+                  <Button type="button" variant="ghost" size="icon" className="lg:hidden" aria-label={t("accessibility.openNavigation")} onClick={() => setMobileOpen(true)}>
+                    <PanelLeft className="h-4 w-4" aria-hidden />
+                  </Button>
+                </Tooltip>
                 <Button type="button" variant="outline" className="hidden min-w-[15rem] justify-between md:flex" onClick={() => setCommandOpen(true)}>
-                  <span className="flex items-center gap-2">
-                    <Search className="h-4 w-4" aria-hidden />
-                    {t("commandPalette.placeholder")}
-                  </span>
+                  <span className="flex items-center gap-2"><Search className="h-4 w-4" aria-hidden />{t("commandPalette.placeholder")}</span>
                   <span className="text-xs text-muted-foreground">Ctrl K</span>
                 </Button>
                 <div className="min-w-0">
@@ -235,38 +302,16 @@ export function PortalShell({
                 {portal === "school" && can(SCHOOL_PERMISSIONS.notificationsRead) ? <NotificationLink /> : null}
                 <LanguageSwitcher />
                 <ThemeSwitcher />
-                {session.user ? (
-                  <UserMenu
-                    fullName={session.user.fullName}
-                    email={session.user.email}
-                    portalLabel={t(`navigation.${portal}`)}
-                    onManageAccount={() => setAccountOpen(true)}
-                    onLogout={exit}
-                  />
-                ) : null}
+                {session.user ? <UserMenu fullName={session.user.fullName} email={session.user.email} portalLabel={t(`navigation.${portal}`)} onManageAccount={() => setAccountOpen(true)} onLogout={exit} /> : null}
               </div>
             </div>
             <nav aria-label={t("accessibility.breadcrumbs")} className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              {breadcrumbs.map((item, index) => (
-                <span key={item.href} className="flex items-center gap-2">
-                  {index > 0 ? <span aria-hidden="true">/</span> : null}
-                  {index === breadcrumbs.length - 1 ? (
-                    <span className="font-medium text-foreground">{item.label}</span>
-                  ) : (
-                    <Link href={item.href} className="hover:text-foreground">
-                      {item.label}
-                    </Link>
-                  )}
-                </span>
-              ))}
+              {breadcrumbs.map((item, index) => <span key={item.href} className="flex items-center gap-2">{index > 0 ? <span aria-hidden="true">/</span> : null}{index === breadcrumbs.length - 1 ? <span className="font-medium text-foreground">{item.label}</span> : <Link href={item.href} className="hover:text-foreground">{item.label}</Link>}</span>)}
             </nav>
           </div>
         </header>
-        <main id="main-content" className="px-4 py-6 print:px-0 print:py-0 sm:px-6">
-          {children}
-        </main>
+        <main id="main-content" className="px-4 py-6 print:px-0 print:py-0 sm:px-6">{children}</main>
       </div>
-
       <CommandPalette items={commandItems} open={commandOpen} onOpenChange={setCommandOpen} />
       <AccountProfileDialog open={accountOpen} onOpenChange={setAccountOpen} onPasswordChanged={completePasswordChange} />
     </div>
@@ -275,15 +320,8 @@ export function PortalShell({
 
 function schoolAccessKey(roles: readonly string[]): "principal" | "administrator" | "staff" {
   const normalizedRoles = roles.map((role) => role.trim().toUpperCase());
-
-  if (normalizedRoles.includes("PRINCIPAL")) {
-    return "principal";
-  }
-
-  if (normalizedRoles.includes("SCHOOL_IT") || normalizedRoles.includes("SCHOOLIT") || normalizedRoles.includes("ADMINSTAFF")) {
-    return "administrator";
-  }
-
+  if (normalizedRoles.includes("PRINCIPAL")) return "principal";
+  if (normalizedRoles.includes("SCHOOL_IT") || normalizedRoles.includes("SCHOOLIT") || normalizedRoles.includes("ADMINSTAFF")) return "administrator";
   return "staff";
 }
 
@@ -291,56 +329,15 @@ function buildBreadcrumbs(pathname: string, t: ReturnType<typeof useTranslations
   const segments = pathname.split("/").filter(Boolean);
   const breadcrumbs: Array<{href: string; label: string}> = [];
   let currentPath = "";
+  const labels: Record<string, string> = {
+    central: t("navigation.central"), school: t("navigation.school"), dashboard: t("navigation.dashboard"), schools: t("navigation.schools"), health: t("navigation.health"), tickets: t("navigation.tickets"), audit: t("navigation.audit"), policies: t("navigation.policies"), "school-administrators": t("navigation.schoolAdministrators"), users: t("navigation.users"), roles: t("navigation.rolesAndPermissions"), permissions: t("navigation.rolesAndPermissions"), outgoing: t("navigation.outgoing"), incoming: t("navigation.incoming"), internal: t("navigation.internal"), circulars: t("navigation.circulars"), "needs-reply": t("navigation.needsReply"), academic: t("navigation.academic"), attendance: t("navigation.attendance"), correspondence: t("navigation.correspondence"), settings: t("navigation.settings"), reports: t("navigation.reports"), archive: t("navigation.archive"), notifications: t("navigation.notifications"), categories: t("navigation.categories"), parties: t("navigation.parties"), new: t("navigation.newDocument"), edit: t("common.edit"),
+  };
 
   segments.forEach((segment, index) => {
     currentPath += `/${segment}`;
-    if (index === 0) {
-      breadcrumbs.push({href: currentPath, label: t(`navigation.${segment}`)});
-      return;
-    }
-
-    if (/^[0-9a-f-]{8,}$/i.test(segment)) {
-      return;
-    }
-
-    const previousSegment = segments[index - 1] ?? "";
-
-    if (segment === "new" && previousSegment === "users") {
-      breadcrumbs.push({href: currentPath, label: t("navigation.newUser")});
-      return;
-    }
-
-    if (segment === "new" && previousSegment === "correspondence") {
-      breadcrumbs.push({href: currentPath, label: t("navigation.newDocument")});
-      return;
-    }
-
-    const labelMap: Record<string, string> = {
-      schools: t("navigation.schools"),
-      health: t("navigation.health"),
-      tickets: t("navigation.tickets"),
-      audit: t("navigation.audit"),
-      policies: t("navigation.policies"),
-      "school-administrators": t("navigation.schoolAdministrators"),
-      users: t("navigation.users"),
-      outgoing: t("navigation.outgoing"),
-      incoming: t("navigation.incoming"),
-      internal: t("navigation.internal"),
-      circulars: t("navigation.circulars"),
-      "needs-reply": t("navigation.needsReply"),
-      academic: t("navigation.academic"),
-      attendance: t("navigation.attendance"),
-      correspondence: t("navigation.correspondence"),
-      settings: t("navigation.settings"),
-      reports: t("navigation.reports"),
-      archive: t("navigation.archive"),
-      notifications: t("navigation.notifications"),
-      categories: t("documents.manageCategories"),
-      parties: t("documents.manageParties"),
-    };
-
-    breadcrumbs.push({href: currentPath, label: labelMap[segment] ?? segment});
+    if (index === 0) return;
+    if (/^[0-9a-f-]{8,}$/i.test(segment)) return;
+    breadcrumbs.push({href: currentPath, label: labels[segment] ?? segment});
   });
-
   return breadcrumbs;
 }

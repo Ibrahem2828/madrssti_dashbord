@@ -113,7 +113,7 @@ function validPath(path: string[], portal: Portal): boolean {
 
 async function responseFrom(response: Response, fallbackRequestId: string): Promise<NextResponse> {
   const headers = new Headers();
-  ["content-type", "content-disposition", "cache-control", "x-request-id"].forEach((name) => {
+  ["content-type", "content-length", "content-disposition", "cache-control", "x-request-id"].forEach((name) => {
     const value = response.headers.get(name);
     if (value) {
       headers.set(name, value);
@@ -123,6 +123,12 @@ async function responseFrom(response: Response, fallbackRequestId: string): Prom
   const requestId = extractRequestId(response) ?? fallbackRequestId;
   if (!headers.get("x-request-id")) {
     headers.set("X-Request-ID", requestId);
+  }
+
+  // Attachment previews/downloads are authenticated, tenant-scoped responses.
+  // Do not let shared intermediaries retain their binary contents if Django did not set a stricter policy.
+  if (response.headers.get("content-type")?.toLowerCase().includes("application/pdf") && !headers.get("cache-control")) {
+    headers.set("Cache-Control", "private, no-store");
   }
 
   return new NextResponse(response.body, {status: response.status, headers});

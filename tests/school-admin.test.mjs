@@ -126,21 +126,22 @@ test("school client code keeps browser calls same-origin through browserApi and 
   const screenSource = read("src/features/school/components/documents-screen.tsx");
   assert.match(serviceSource, /browserApi<.*?>\("school", schoolEndpoints\./s);
   assert.doesNotMatch(serviceSource, /https?:\/\//);
-  assert.match(screenSource, /gatewayHref\("school", schoolEndpoints\.documents\.preview/);
+  assert.match(serviceSource, /gatewayHref\("school", schoolEndpoints\.documents\.preview/);
+  assert.match(screenSource, /DocumentPreviewDialog/);
   assert.match(screenSource, /gatewayHref\("school", schoolEndpoints\.documents\.download/);
 });
 
 test("school navigation exposes serializable document modules with explicit permissions", () => {
   const source = read("src/config/navigation.school.ts");
   [
-    'key: "correspondenceOverview"',
-    'key: "newDocument"',
-    'key: "outgoing"',
-    'key: "incoming"',
-    'key: "circulars"',
-    'key: "needsReply"',
-    'key: "categories"',
-    'key: "parties"',
+    'id: "correspondenceOverview"',
+    'id: "newDocument"',
+    'id: "outgoing"',
+    'id: "incoming"',
+    'id: "circulars"',
+    'id: "needsReply"',
+    'id: "categories"',
+    'id: "parties"',
   ].forEach((fragment) => {
     assert.match(source, new RegExp(fragment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   });
@@ -148,4 +149,48 @@ test("school navigation exposes serializable document modules with explicit perm
   assert.match(source, /icon: "incoming"/);
   assert.match(source, /icon: "reply"/);
   assert.match(source, /icon: "collections"/);
+});
+
+test("navigation is grouped, capability-aware, and does not render an empty group", () => {
+  const types = read("src/config/navigation.types.ts");
+  const shell = read("src/components/layout/portal-shell.tsx");
+  const schoolNavigation = read("src/config/navigation.school.ts");
+
+  assert.match(types, /export type NavigationGroup/);
+  assert.match(types, /permissionsAny\?: readonly string\[\]/);
+  assert.match(types, /permissionsAll\?: readonly string\[\]/);
+  assert.match(schoolNavigation, /id: "correspondence"/);
+  assert.match(schoolNavigation, /collapsible: true/);
+  assert.match(shell, /group\.items\.filter\(\(item\) => canAccess\(item, can\)\)/);
+  assert.match(shell, /\.filter\(\(group\) => group\.items\.length > 0\)/);
+  assert.match(shell, /hasCapability\(item\.capability\)/);
+});
+
+test("attachment upload, preview, and download stay within the same-origin BFF", () => {
+  const uploader = read("src/components/correspondence/document-file-uploader.tsx");
+  const preview = read("src/components/correspondence/document-preview-dialog.tsx");
+  const service = read("src/features/school/services/school-api.ts");
+  const mapper = read("src/features/school/mappers/school.ts");
+  const gateway = read("src/lib/api/gateway.ts");
+
+  assert.match(uploader, /uploadDocumentAttachment\(targetDocumentId, item\.file, item\.isPrimary, controller\.signal\)/);
+  assert.doesNotMatch(uploader, /@\/services\/api/);
+  assert.match(service, /browserApi<unknown>\("school", schoolEndpoints\.documents\.attachments\(id\)/);
+  assert.match(service, /gatewayHref\("school", schoolEndpoints\.documents\.preview/);
+  assert.match(preview, /URL\.createObjectURL/);
+  assert.match(preview, /URL\.revokeObjectURL/);
+  assert.doesNotMatch(preview, /https?:\/\//);
+  assert.match(mapper, /downloadUrl: ""/);
+  assert.match(mapper, /previewUrl: ""/);
+  assert.match(gateway, /"content-length"/);
+  assert.match(gateway, /"Cache-Control", "private, no-store"/);
+});
+
+test("document creation and reply attachment queues upload only after a server document ID exists", () => {
+  const source = read("src/features/school/components/documents-screen.tsx");
+
+  assert.match(source, /uploaderRef\.current\.uploadPending\(result\.data\.id\)/);
+  assert.match(source, /replyUploaderRef\.current\.uploadPending\(replyDocumentId\)/);
+  assert.match(source, /createdWithAttachmentFailures/);
+  assert.match(source, /replyCreatedWithAttachmentFailures/);
 });

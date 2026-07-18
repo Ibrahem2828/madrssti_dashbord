@@ -12,7 +12,7 @@ function read(relativePath) {
 test("central navigation exposes the school administrators workspace with exact permissions", () => {
   const source = read("src/config/navigation.central.ts");
 
-  assert.match(source, /key: "schoolAdministrators"/);
+  assert.match(source, /id: "schoolAdministrators"/);
   assert.match(source, /href: "\/central\/school-administrators"/);
   assert.match(source, /CENTRAL_PERMISSIONS\.schoolAdminRead/);
   assert.match(source, /CENTRAL_PERMISSIONS\.schoolAdminCreate/);

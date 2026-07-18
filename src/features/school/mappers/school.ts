@@ -296,8 +296,10 @@ export function attachmentFromDto(value: unknown): SchoolDocumentAttachment {
     fileSize: asNumber(dto.file_size),
     mimeType: asText(dto.mime_type),
     isPrimary: Boolean(dto.is_primary),
-    downloadUrl: asText(dto.download_url),
-    previewUrl: asText(dto.preview_url || dto.download_url),
+    // The browser builds a same-origin BFF URL from the document and attachment IDs.
+    // Do not retain server-provided media paths in client state.
+    downloadUrl: "",
+    previewUrl: "",
     createdAt: asText(dto.created_at),
     uploadedBy: actorFromDto(dto.uploaded_by),
   };

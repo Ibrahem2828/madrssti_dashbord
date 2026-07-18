@@ -1,7 +1,8 @@
 "use client";
 
 import type {ApiResult} from "@/lib/api/contracts";
-import {browserApi} from "@/lib/api/browser-client";
+import {browserApi, gatewayHref} from "@/lib/api/browser-client";
+import {normalizeResponse} from "@/lib/api/normalize-response";
 import {schoolEndpoints} from "@/config/endpoints.school";
 
 import {
@@ -406,13 +407,19 @@ export async function deleteDocument(id: string, reason = ""): Promise<ApiResult
   return result.success ? {success: true, data: null} : result;
 }
 
-export async function uploadDocumentAttachment(id: string, file: File, isPrimary = false): Promise<ApiResult<SchoolDocumentAttachment>> {
+export async function uploadDocumentAttachment(
+  id: string,
+  file: File,
+  isPrimary = false,
+  signal?: AbortSignal,
+): Promise<ApiResult<SchoolDocumentAttachment>> {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("is_primary", String(isPrimary));
   const result = await browserApi<unknown>("school", schoolEndpoints.documents.attachments(id), {
     method: "POST",
     body: formData,
+    signal,
   });
   return result.success ? {success: true, data: attachmentFromDto(result.data)} : result;
 }
@@ -420,6 +427,47 @@ export async function uploadDocumentAttachment(id: string, file: File, isPrimary
 export async function fetchDocumentAttachments(id: string): Promise<ApiResult<SchoolDocumentAttachment[]>> {
   const result = await browserApi<unknown>("school", schoolEndpoints.documents.attachmentsList(id));
   return result.success ? {success: true, data: Array.isArray(result.data) ? result.data.map(attachmentFromDto) : []} : result;
+}
+
+export type DocumentAttachmentBinary = {
+  blob: Blob;
+  contentType: string;
+  requestId?: string;
+};
+
+/** Retrieves a PDF through the same-origin BFF. The backend media URL is never exposed to the browser. */
+export async function fetchDocumentAttachmentPreview(
+  documentId: string,
+  attachmentId: string,
+  signal?: AbortSignal,
+): Promise<ApiResult<DocumentAttachmentBinary>> {
+  const href = gatewayHref("school", schoolEndpoints.documents.preview(documentId, attachmentId));
+
+  try {
+    const response = await fetch(href, {credentials: "same-origin", cache: "no-store", signal});
+    const requestId = response.headers.get("x-request-id") ?? undefined;
+    const contentType = response.headers.get("content-type") ?? "";
+
+    if (!response.ok) {
+      if (contentType.includes("application/json")) {
+        return normalizeResponse<DocumentAttachmentBinary>(await response.json(), {ok: false, requestId, status: response.status});
+      }
+
+      return {success: false, error: {code: `HTTP_${response.status}`, message: "Attachment preview failed"}, requestId};
+    }
+
+    if (!contentType.toLowerCase().includes("application/pdf")) {
+      return {success: false, error: {code: "INVALID_BACKEND_RESPONSE", message: "Attachment preview did not return a PDF"}, requestId};
+    }
+
+    return {success: true, data: {blob: await response.blob(), contentType, requestId}};
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      return {success: false, error: {code: "ABORTED", message: "Attachment preview was cancelled"}};
+    }
+
+    return {success: false, error: {code: "NETWORK_ERROR", message: "Attachment preview failed"}};
+  }
 }
 
 export async function linkDocument(id: string, relatedDocument: string, relationType: string): Promise<ApiResult<{id: string; relatedDocument: string; relationType: string}>> {

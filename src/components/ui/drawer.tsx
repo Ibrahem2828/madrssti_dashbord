@@ -42,6 +42,8 @@ export function Drawer({
 
     previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const node = containerRef.current;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     const focusable = node?.querySelector<HTMLElement>(
       'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
     );
@@ -51,11 +53,38 @@ export function Drawer({
       if (event.key === "Escape") {
         event.preventDefault();
         onOpenChange(false);
+        return;
+      }
+
+      if (event.key !== "Tab" || !node) {
+        return;
+      }
+
+      const focusableElements = Array.from(
+        node.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      const first = focusableElements[0];
+      const last = focusableElements[focusableElements.length - 1];
+
+      if (!first || !last) {
+        event.preventDefault();
+        node.focus();
+      } else if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
       }
     };
 
     document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
   }, [onOpenChange, open]);
 
   if (!open) {
