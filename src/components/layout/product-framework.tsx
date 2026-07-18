@@ -255,6 +255,20 @@ export function PaginationBar({
   );
 }
 
+/** Keeps a long-form's primary action reachable on a phone without obscuring content. */
+export function StickyPageActions({children, className}: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn(
+        "sticky bottom-3 z-20 flex flex-wrap items-center gap-3 rounded-xl border bg-card/95 p-3 shadow-lg backdrop-blur md:static md:border-0 md:bg-transparent md:p-0 md:shadow-none",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
 export function MobileRecordCard({title, subtitle, children, actions}: {title: string; subtitle?: string; children?: ReactNode; actions?: ReactNode}) {
   return (
     <div className="rounded-2xl border bg-card p-4 shadow-sm">

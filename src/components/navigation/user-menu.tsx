@@ -1,7 +1,7 @@
 "use client";
 
 import {ChevronDown, LogOut, UserRoundPen} from "lucide-react";
-import {useEffect, useId, useRef, useState} from "react";
+import {useEffect, useId, useRef, useState, type ReactNode} from "react";
 import {useTranslations} from "next-intl";
 
 import {Badge} from "@/components/ui/badge";
@@ -12,12 +12,19 @@ export function UserMenu({
   fullName,
   email,
   portalLabel,
+  schoolName,
+  roleLabel,
+  contextControls,
   onManageAccount,
   onLogout,
 }: {
   fullName: string;
   email: string;
   portalLabel: string;
+  schoolName?: string;
+  roleLabel?: string;
+  /** Compact-only controls (school, language, and theme) live in the menu on phones. */
+  contextControls?: ReactNode;
   onManageAccount: () => void;
   onLogout: () => Promise<void>;
 }) {
@@ -86,7 +93,10 @@ export function UserMenu({
             <p className="font-medium">{fullName}</p>
             <p className="text-sm text-muted-foreground">{email}</p>
             <Badge className="mt-2">{portalLabel}</Badge>
+            {schoolName ? <p className="mt-2 truncate text-sm text-muted-foreground">{schoolName}</p> : null}
+            {roleLabel ? <p className="mt-1 text-xs text-muted-foreground">{roleLabel}</p> : null}
           </div>
+          {contextControls ? <div className="mt-4 border-t pt-4">{contextControls}</div> : null}
           <div className="mt-4 border-t pt-4">
             <Button
               type="button"

@@ -12,12 +12,15 @@ interface DataTableProps<T> {
   data: T[];
   isLoading?: boolean;
   emptyMessage?: string;
+  /** Use a stable backend identifier whenever the response supplies one. */
+  getRowKey?: (row: T, index: number) => React.Key;
 }
 
 export function DataTable<T extends Record<string, unknown>>({
   columns,
   data,
   isLoading,
+  getRowKey,
   emptyMessage = "لا توجد بيانات",
 }: DataTableProps<T>) {
   if (isLoading) {
@@ -26,7 +29,7 @@ export function DataTable<T extends Record<string, unknown>>({
         {Array.from({ length: 5 }).map((_, i) => (
           <div
             key={i}
-            className="h-12 w-full animate-pulse rounded-lg bg-surface-muted dark:bg-dark-muted"
+            className="h-12 w-full animate-pulse rounded-lg bg-surface-muted"
           />
         ))}
       </div>
@@ -35,7 +38,7 @@ export function DataTable<T extends Record<string, unknown>>({
 
   if (data.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-text-muted" dir="rtl">
+      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground" dir="rtl">
         <svg className="mb-3 h-12 w-12 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
@@ -50,30 +53,30 @@ export function DataTable<T extends Record<string, unknown>>({
   }
 
   return (
-    <div className="overflow-x-auto" dir="rtl">
+    <div className="overflow-x-auto rounded-2xl border bg-card" dir="rtl">
       <table className="w-full border-collapse text-sm">
         <thead>
-          <tr className="border-b border-surface-border">
+          <tr className="border-b border-border">
             {columns.map((col) => (
               <th
                 key={col.key}
-                className={`px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-text-muted ${col.className || ""}`}
+                className={`px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground ${col.className || ""}`}
               >
                 {col.header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-surface-border">
+        <tbody className="divide-y divide-border">
           {data.map((row, rowIdx) => (
             <tr
-              key={rowIdx}
-              className="transition-colors hover:bg-surface-muted/50 dark:hover:bg-dark-muted/50"
+              key={getRowKey?.(row, rowIdx) ?? rowIdx}
+              className="transition-colors hover:bg-surface-muted/70"
             >
               {columns.map((col) => (
                 <td
                   key={col.key}
-                  className={`whitespace-nowrap px-4 py-3 text-text-primary ${col.className || ""}`}
+                  className={`whitespace-nowrap px-4 py-3 text-foreground ${col.className || ""}`}
                 >
                   {col.cell(row)}
                 </td>

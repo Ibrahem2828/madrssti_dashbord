@@ -9,7 +9,7 @@
     "start": "node scripts/start-standalone.mjs",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "node --test tests/auth-bff.test.mjs tests/school-admin.test.mjs tests/central-school-administrators.test.mjs tests/central-school-users.test.mjs tests/school-session-context.test.mjs",
+    "test": "node --test tests/auth-bff.test.mjs tests/school-admin.test.mjs tests/central-school-administrators.test.mjs tests/central-school-users.test.mjs tests/school-session-context.test.mjs tests/navigation-refactor.test.mjs",
     "test:auth": "node --test tests/auth-bff.test.mjs",
     "test:school-admin": "node --test tests/school-admin.test.mjs",
     "test:central-school-administrators": "node --test tests/central-school-administrators.test.mjs",

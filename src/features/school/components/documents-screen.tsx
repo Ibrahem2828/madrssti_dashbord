@@ -9,8 +9,11 @@ import {Can} from "@/components/auth/can";
 import {ErrorState, ForbiddenState, UnsupportedState} from "@/components/feedback/states";
 import {Button} from "@/components/ui/button";
 import {ConfirmDialog} from "@/components/ui/confirm-dialog";
+import {ReasonDialog} from "@/components/ui/reason-dialog";
 import {Input} from "@/components/ui/input";
 import {Textarea} from "@/components/ui/textarea";
+import {FormControl} from "@/components/forms/form-primitives";
+import {StickyPageActions} from "@/components/layout/product-framework";
 import {gatewayHref} from "@/lib/api/browser-client";
 import {Link} from "@/i18n/routing";
 import {hasCapability} from "@/config/capabilities";
@@ -280,68 +283,25 @@ export function SchoolDocumentsScreen() {
       <Can permission={SCHOOL_PERMISSIONS.documentsCreate}>
         <Card title={t("createTitle")}>
           <form className="grid gap-3 md:grid-cols-2" onSubmit={(event) => void submitCreate(event)}>
-            <select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={form.direction} onChange={(event) => setForm({...form, direction: event.target.value})}>
-              {DOCUMENT_DIRECTIONS.map((direction) => (
-                <option key={direction} value={direction}>
-                  {directionLabel(direction)}
-                </option>
-              ))}
-            </select>
-            <select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={form.documentType} onChange={(event) => setForm({...form, documentType: event.target.value})}>
-              {DOCUMENT_TYPES.map((documentType) => (
-                <option key={documentType} value={documentType}>
-                  {translateEnum(documentType, documentTypeT, documentTypeTranslationKeys)}
-                </option>
-              ))}
-            </select>
-            <Input value={form.title} onChange={(event) => setForm({...form, title: event.target.value})} placeholder={common("title")} required />
-            <Input value={form.subject} onChange={(event) => setForm({...form, subject: event.target.value})} placeholder={t("subject")} required />
-            <select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={form.priority} onChange={(event) => setForm({...form, priority: event.target.value})}>
-              {DOCUMENT_PRIORITIES.map((priority) => (
-                <option key={priority} value={priority}>
-                  {priorityLabel(priority)}
-                </option>
-              ))}
-            </select>
-            <Input type="date" value={form.documentDate} onChange={(event) => setForm({...form, documentDate: event.target.value})} required />
-            <select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={form.category} onChange={(event) => setForm({...form, category: event.target.value})}>
-              <option value="">{t("category")}</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-            <select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={form.sourceParty} onChange={(event) => setForm({...form, sourceParty: event.target.value})}>
-              <option value="">{t("sourceParty")}</option>
-              {parties.map((party) => (
-                <option key={party.id} value={party.id}>
-                  {party.name}
-                </option>
-              ))}
-            </select>
-            <select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={form.targetParty} onChange={(event) => setForm({...form, targetParty: event.target.value})}>
-              <option value="">{t("targetParty")}</option>
-              {parties.map((party) => (
-                <option key={party.id} value={party.id}>
-                  {party.name}
-                </option>
-              ))}
-            </select>
-            <Input value={form.sourceName} onChange={(event) => setForm({...form, sourceName: event.target.value})} placeholder={t("sourceName")} />
-            <Input value={form.targetName} onChange={(event) => setForm({...form, targetName: event.target.value})} placeholder={t("targetName")} />
+            <FormControl label={t("direction")} required><select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={form.direction} onChange={(event) => setForm({...form, direction: event.target.value})}>{DOCUMENT_DIRECTIONS.map((direction) => <option key={direction} value={direction}>{directionLabel(direction)}</option>)}</select></FormControl>
+            <FormControl label={t("documentType")} required><select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={form.documentType} onChange={(event) => setForm({...form, documentType: event.target.value})}>{DOCUMENT_TYPES.map((documentType) => <option key={documentType} value={documentType}>{translateEnum(documentType, documentTypeT, documentTypeTranslationKeys)}</option>)}</select></FormControl>
+            <FormControl label={common("title")} required><Input value={form.title} onChange={(event) => setForm({...form, title: event.target.value})} placeholder={common("title")} required /></FormControl>
+            <FormControl label={t("subject")} required><Input value={form.subject} onChange={(event) => setForm({...form, subject: event.target.value})} placeholder={t("subject")} required /></FormControl>
+            <FormControl label={t("priority")} required><select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={form.priority} onChange={(event) => setForm({...form, priority: event.target.value})}>{DOCUMENT_PRIORITIES.map((priority) => <option key={priority} value={priority}>{priorityLabel(priority)}</option>)}</select></FormControl>
+            <FormControl label={common("date")} required><Input type="date" value={form.documentDate} onChange={(event) => setForm({...form, documentDate: event.target.value})} required /></FormControl>
+            <FormControl label={t("category")}><select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={form.category} onChange={(event) => setForm({...form, category: event.target.value})}><option value="">{t("category")}</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></FormControl>
+            <FormControl label={t("sourceParty")}><select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={form.sourceParty} onChange={(event) => setForm({...form, sourceParty: event.target.value})}><option value="">{t("sourceParty")}</option>{parties.map((party) => <option key={party.id} value={party.id}>{party.name}</option>)}</select></FormControl>
+            <FormControl label={t("targetParty")}><select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={form.targetParty} onChange={(event) => setForm({...form, targetParty: event.target.value})}><option value="">{t("targetParty")}</option>{parties.map((party) => <option key={party.id} value={party.id}>{party.name}</option>)}</select></FormControl>
+            <FormControl label={t("sourceName")}><Input value={form.sourceName} onChange={(event) => setForm({...form, sourceName: event.target.value})} placeholder={t("sourceName")} /></FormControl>
+            <FormControl label={t("targetName")}><Input value={form.targetName} onChange={(event) => setForm({...form, targetName: event.target.value})} placeholder={t("targetName")} /></FormControl>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={form.needsReply} onChange={(event) => setForm({...form, needsReply: event.target.checked})} />
               {t("needsReply")}
             </label>
-            <Input type="date" value={form.replyDueDate} onChange={(event) => setForm({...form, replyDueDate: event.target.value})} placeholder={t("replyDueDate")} />
+            <FormControl label={t("replyDueDate")}><Input type="date" value={form.replyDueDate} onChange={(event) => setForm({...form, replyDueDate: event.target.value})} /></FormControl>
+            <FormControl label={common("notes")} className="md:col-span-2"><Textarea value={form.notes} onChange={(event) => setForm({...form, notes: event.target.value})} placeholder={common("notes")} /></FormControl>
             <div className="md:col-span-2">
-              <Textarea value={form.notes} onChange={(event) => setForm({...form, notes: event.target.value})} placeholder={common("notes")} />
-            </div>
-            <div className="md:col-span-2">
-              <Button type="submit" loading={pending}>
-                {common("create")}
-              </Button>
+              <StickyPageActions><Button type="submit" loading={pending}>{common("create")}</Button></StickyPageActions>
             </div>
           </form>
           <Can permission={SCHOOL_PERMISSIONS.documentsUpdate}>
@@ -606,6 +566,7 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
           : confirmation === "reply"
             ? confirmT("createReply")
             : confirmT("linkDocument");
+  const confirmationRequiresReason = confirmation === "sent" || confirmation === "received" || confirmation === "delete" || confirmation === "archive";
 
   if (loading) {
     return <LoadingBlock label={common("loading")} />;
@@ -635,49 +596,18 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
       <Can permission={SCHOOL_PERMISSIONS.documentsUpdate}>
         <Card title={t("editTitle")}>
           <form className="grid gap-3 md:grid-cols-2" onSubmit={(event) => void save(event)}>
-            <Input value={form.title} onChange={(event) => setForm({...form, title: event.target.value})} placeholder={common("title")} required />
-            <Input value={form.subject} onChange={(event) => setForm({...form, subject: event.target.value})} placeholder={t("subject")} required />
-            <select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={form.priority} onChange={(event) => setForm({...form, priority: event.target.value})}>
-              {DOCUMENT_PRIORITIES.map((priority) => (
-                <option key={priority} value={priority}>
-                  {priorityLabel(priority)}
-                </option>
-              ))}
-            </select>
-            <select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={form.category} onChange={(event) => setForm({...form, category: event.target.value})}>
-              <option value="">{t("category")}</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-            <Input type="date" value={form.replyDueDate} onChange={(event) => setForm({...form, replyDueDate: event.target.value})} />
-            <select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={form.sourceParty} onChange={(event) => setForm({...form, sourceParty: event.target.value})}>
-              <option value="">{t("sourceParty")}</option>
-              {parties.map((party) => (
-                <option key={party.id} value={party.id}>
-                  {party.name}
-                </option>
-              ))}
-            </select>
-            <select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={form.targetParty} onChange={(event) => setForm({...form, targetParty: event.target.value})}>
-              <option value="">{t("targetParty")}</option>
-              {parties.map((party) => (
-                <option key={party.id} value={party.id}>
-                  {party.name}
-                </option>
-              ))}
-            </select>
-            <Input value={form.sourceName} onChange={(event) => setForm({...form, sourceName: event.target.value})} placeholder={t("sourceName")} />
-            <Input value={form.targetName} onChange={(event) => setForm({...form, targetName: event.target.value})} placeholder={t("targetName")} />
+            <FormControl label={common("title")} required><Input value={form.title} onChange={(event) => setForm({...form, title: event.target.value})} placeholder={common("title")} required /></FormControl>
+            <FormControl label={t("subject")} required><Input value={form.subject} onChange={(event) => setForm({...form, subject: event.target.value})} placeholder={t("subject")} required /></FormControl>
+            <FormControl label={t("priority")}><select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={form.priority} onChange={(event) => setForm({...form, priority: event.target.value})}>{DOCUMENT_PRIORITIES.map((priority) => <option key={priority} value={priority}>{priorityLabel(priority)}</option>)}</select></FormControl>
+            <FormControl label={t("category")}><select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={form.category} onChange={(event) => setForm({...form, category: event.target.value})}><option value="">{t("category")}</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></FormControl>
+            <FormControl label={t("replyDueDate")}><Input type="date" value={form.replyDueDate} onChange={(event) => setForm({...form, replyDueDate: event.target.value})} /></FormControl>
+            <FormControl label={t("sourceParty")}><select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={form.sourceParty} onChange={(event) => setForm({...form, sourceParty: event.target.value})}><option value="">{t("sourceParty")}</option>{parties.map((party) => <option key={party.id} value={party.id}>{party.name}</option>)}</select></FormControl>
+            <FormControl label={t("targetParty")}><select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={form.targetParty} onChange={(event) => setForm({...form, targetParty: event.target.value})}><option value="">{t("targetParty")}</option>{parties.map((party) => <option key={party.id} value={party.id}>{party.name}</option>)}</select></FormControl>
+            <FormControl label={t("sourceName")}><Input value={form.sourceName} onChange={(event) => setForm({...form, sourceName: event.target.value})} placeholder={t("sourceName")} /></FormControl>
+            <FormControl label={t("targetName")}><Input value={form.targetName} onChange={(event) => setForm({...form, targetName: event.target.value})} placeholder={t("targetName")} /></FormControl>
+            <FormControl label={common("notes")} className="md:col-span-2"><Textarea value={form.notes} onChange={(event) => setForm({...form, notes: event.target.value})} placeholder={common("notes")} /></FormControl>
             <div className="md:col-span-2">
-              <Textarea value={form.notes} onChange={(event) => setForm({...form, notes: event.target.value})} placeholder={common("notes")} />
-            </div>
-            <div className="md:col-span-2">
-              <Button type="submit" loading={pending}>
-                {common("save")}
-              </Button>
+              <StickyPageActions><Button type="submit" loading={pending}>{common("save")}</Button></StickyPageActions>
             </div>
           </form>
         </Card>
@@ -717,7 +647,6 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
         <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-3 rounded-md border p-4">
               <p className="font-medium">{t("statusActions")}</p>
-              <Input value={actionReason} onChange={(event) => setActionReason(event.target.value)} placeholder={t("auditReason")} />
               <p className="text-xs text-muted-foreground">{t("auditReasonDescription")}</p>
               <div className="flex flex-wrap gap-2">
                 <Can permission={SCHOOL_PERMISSIONS.outgoingMarkSent}>
@@ -749,17 +678,17 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
           <Can permission={SCHOOL_PERMISSIONS.documentsCreate}>
             <div className="space-y-3 rounded-md border p-4">
               <p className="font-medium">{t("replyTitle")}</p>
-              <Input value={replyForm.title} onChange={(event) => setReplyForm({...replyForm, title: event.target.value})} placeholder={common("title")} />
-              <Input value={replyForm.subject} onChange={(event) => setReplyForm({...replyForm, subject: event.target.value})} placeholder={t("subject")} />
-              <Input type="date" value={replyForm.documentDate} onChange={(event) => setReplyForm({...replyForm, documentDate: event.target.value})} />
-              <select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={replyForm.priority} onChange={(event) => setReplyForm({...replyForm, priority: event.target.value})}>
+              <FormControl label={common("title")} required><Input value={replyForm.title} onChange={(event) => setReplyForm({...replyForm, title: event.target.value})} placeholder={common("title")} /></FormControl>
+              <FormControl label={t("subject")} required><Input value={replyForm.subject} onChange={(event) => setReplyForm({...replyForm, subject: event.target.value})} placeholder={t("subject")} /></FormControl>
+              <FormControl label={common("date")} required><Input type="date" value={replyForm.documentDate} onChange={(event) => setReplyForm({...replyForm, documentDate: event.target.value})} /></FormControl>
+              <FormControl label={t("priority")}><select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={replyForm.priority} onChange={(event) => setReplyForm({...replyForm, priority: event.target.value})}>
                 {DOCUMENT_PRIORITIES.map((priority) => (
                   <option key={priority} value={priority}>
                     {priorityLabel(priority)}
                   </option>
                 ))}
-              </select>
-              <Textarea value={replyForm.notes} onChange={(event) => setReplyForm({...replyForm, notes: event.target.value})} placeholder={common("notes")} />
+              </select></FormControl>
+              <FormControl label={common("notes")}><Textarea value={replyForm.notes} onChange={(event) => setReplyForm({...replyForm, notes: event.target.value})} placeholder={common("notes")} /></FormControl>
               <Can permission={SCHOOL_PERMISSIONS.documentsUpdate}>
                 <DocumentFileUploader ref={replyUploaderRef} />
               </Can>
@@ -771,14 +700,14 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
           <Can permission={SCHOOL_PERMISSIONS.documentsLink}>
             <div className="space-y-3 rounded-md border p-4">
               <p className="font-medium">{t("linkTitle")}</p>
-              <Input value={linkForm.relatedDocument} onChange={(event) => setLinkForm({...linkForm, relatedDocument: event.target.value})} placeholder={t("relatedDocumentId")} />
-              <select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={linkForm.relationType} onChange={(event) => setLinkForm({...linkForm, relationType: event.target.value})}>
+              <FormControl label={t("relatedDocumentId")} required><Input value={linkForm.relatedDocument} onChange={(event) => setLinkForm({...linkForm, relatedDocument: event.target.value})} placeholder={t("relatedDocumentId")} /></FormControl>
+              <FormControl label={t("relationType")}><select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={linkForm.relationType} onChange={(event) => setLinkForm({...linkForm, relationType: event.target.value})}>
                 {DOCUMENT_RELATION_TYPES.map((relationType) => (
                   <option key={relationType} value={relationType}>
                     {relationTypeLabel(relationType)}
                   </option>
                 ))}
-              </select>
+              </select></FormControl>
               <Button type="button" loading={pending} onClick={() => requestAction("link")}>
                 {t("linkDocument")}
               </Button>
@@ -800,22 +729,44 @@ export function SchoolDocumentDetailScreen({documentId}: {documentId: string}) {
         </Card>
       ) : null}
       {previewAttachment ? <DocumentPreviewDialog open={Boolean(previewAttachment)} onOpenChange={(open) => !open && setPreviewAttachment(null)} documentId={documentId} attachmentId={previewAttachment.id} filename={previewAttachment.filename} /> : null}
-      <ConfirmDialog
-        open={Boolean(confirmation)}
-        onOpenChange={(open) => !open && setConfirmation(null)}
-        title={t("actionsTitle")}
-        description={confirmationDescription}
-        confirmLabel={common("save")}
-        cancelLabel={common("cancel")}
-        variant={confirmation === "delete" ? "danger" : "primary"}
-        loading={pending}
-        onConfirm={() => {
-          if (!confirmation) return;
-          const action = confirmation;
-          setConfirmation(null);
-          void run(action);
-        }}
-      />
+      {confirmationRequiresReason ? (
+        <ReasonDialog
+          open={Boolean(confirmation)}
+          onOpenChange={(open) => !open && setConfirmation(null)}
+          title={t("actionsTitle")}
+          description={confirmationDescription}
+          reasonLabel={t("auditReason")}
+          reasonDescription={t("auditReasonDescription")}
+          reason={actionReason}
+          onReasonChange={setActionReason}
+          confirmLabel={common("save")}
+          cancelLabel={common("cancel")}
+          variant={confirmation === "delete" ? "danger" : "primary"}
+          loading={pending}
+          onConfirm={() => {
+            if (!confirmation) return;
+            const action = confirmation;
+            setConfirmation(null);
+            void run(action);
+          }}
+        />
+      ) : (
+        <ConfirmDialog
+          open={Boolean(confirmation)}
+          onOpenChange={(open) => !open && setConfirmation(null)}
+          title={t("actionsTitle")}
+          description={confirmationDescription}
+          confirmLabel={common("save")}
+          cancelLabel={common("cancel")}
+          loading={pending}
+          onConfirm={() => {
+            if (!confirmation) return;
+            const action = confirmation;
+            setConfirmation(null);
+            void run(action);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -837,6 +788,7 @@ function CollectionManager({mode}: {mode: "category" | "party"}) {
   const permission = mode === "category" ? SCHOOL_PERMISSIONS.documentsManageCategories : SCHOOL_PERMISSIONS.documentsManageParties;
   const [rows, setRows] = useState<PaginatedResult<SchoolDocumentCategory | SchoolCorrespondenceParty> | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -920,20 +872,22 @@ function CollectionManager({mode}: {mode: "category" | "party"}) {
     await load();
   };
 
-  const remove = async (id: string) => {
-    if (!window.confirm(mode === "category" ? confirmT("deleteCategory") : confirmT("deleteParty"))) {
+  const remove = async () => {
+    if (!deleteTarget) {
       return;
     }
     setPending(true);
     setError(null);
     setMessage(null);
-    const result = mode === "category" ? await deleteCategory(id) : await deleteParty(id);
+    const result = mode === "category" ? await deleteCategory(deleteTarget) : await deleteParty(deleteTarget);
     setPending(false);
     if (!result.success) {
       setError(result.error.message);
+      setDeleteTarget(null);
       return;
     }
     setMessage(t("deleted"));
+    setDeleteTarget(null);
     await load();
   };
 
@@ -958,44 +912,42 @@ function CollectionManager({mode}: {mode: "category" | "party"}) {
       {error ? <InlineError message={error} /> : null}
       <Card title={selectedId ? t("editTitle") : t("createTitle")}>
         <form className="grid gap-3 md:grid-cols-2" onSubmit={(event) => void submit(event)}>
-          <Input value={String(form.name ?? "")} onChange={(event) => setForm({...form, name: event.target.value})} placeholder={t("name")} required />
+          <FormControl label={t("name")} required><Input value={String(form.name ?? "")} onChange={(event) => setForm({...form, name: event.target.value})} placeholder={t("name")} required /></FormControl>
           {"code" in form ? (
-            <Input value={String(form.code ?? "")} onChange={(event) => setForm({...form, code: event.target.value})} placeholder={t("code")} required />
+            <FormControl label={t("code")} required><Input value={String(form.code ?? "")} onChange={(event) => setForm({...form, code: event.target.value})} placeholder={t("code")} required /></FormControl>
           ) : (
-            <select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={String(form.partyType ?? "OTHER")} onChange={(event) => setForm({...form, partyType: event.target.value})}>
+            <FormControl label={t("partyType")}><select className="min-h-11 rounded-md border bg-background px-3 text-sm" value={String(form.partyType ?? "OTHER")} onChange={(event) => setForm({...form, partyType: event.target.value})}>
               {PARTY_TYPES.map((partyType) => (
                 <option key={partyType} value={partyType}>
                   {partyTypeLabel(partyType)}
                 </option>
               ))}
-            </select>
+            </select></FormControl>
           )}
           {"parent" in form ? (
-            <Input value={String(form.parent ?? "")} onChange={(event) => setForm({...form, parent: event.target.value})} placeholder={t("parent")} />
+            <FormControl label={t("parent")}><Input value={String(form.parent ?? "")} onChange={(event) => setForm({...form, parent: event.target.value})} placeholder={t("parent")} /></FormControl>
           ) : (
-            <Input value={String(form.phone ?? "")} onChange={(event) => setForm({...form, phone: event.target.value})} placeholder={common("phone")} />
+            <FormControl label={common("phone")}><Input value={String(form.phone ?? "")} onChange={(event) => setForm({...form, phone: event.target.value})} placeholder={common("phone")} /></FormControl>
           )}
           {"address" in form ? (
-            <Input value={String(form.email ?? "")} onChange={(event) => setForm({...form, email: event.target.value})} placeholder={common("email")} />
+            <FormControl label={common("email")}><Input value={String(form.email ?? "")} onChange={(event) => setForm({...form, email: event.target.value})} placeholder={common("email")} /></FormControl>
           ) : null}
           {"address" in form ? (
-            <Input value={String(form.address ?? "")} onChange={(event) => setForm({...form, address: event.target.value})} placeholder={common("address")} />
+            <FormControl label={common("address")}><Input value={String(form.address ?? "")} onChange={(event) => setForm({...form, address: event.target.value})} placeholder={common("address")} /></FormControl>
           ) : null}
-          <div className="md:col-span-2">
+          <FormControl label={"notes" in form ? common("notes") : common("description")} className="md:col-span-2">
             {"notes" in form ? (
               <Textarea value={String(form.notes ?? "")} onChange={(event) => setForm({...form, notes: event.target.value})} placeholder={common("notes")} />
             ) : (
               <Textarea value={String(form.description ?? "")} onChange={(event) => setForm({...form, description: event.target.value})} placeholder={common("description")} />
             )}
-          </div>
+          </FormControl>
           <label className="flex items-center gap-2 text-sm md:col-span-2">
             <input type="checkbox" checked={Boolean(form.isActive)} onChange={(event) => setForm({...form, isActive: event.target.checked})} />
             {common("active")}
           </label>
           <div className="md:col-span-2">
-            <Button type="submit" loading={pending}>
-              {selectedId ? common("save") : common("create")}
-            </Button>
+            <StickyPageActions><Button type="submit" loading={pending}>{selectedId ? common("save") : common("create")}</Button></StickyPageActions>
           </div>
         </form>
       </Card>
@@ -1046,7 +998,7 @@ function CollectionManager({mode}: {mode: "category" | "party"}) {
                         >
                           {common("edit")}
                         </Button>
-                        <Button type="button" className="bg-danger text-danger-foreground" loading={pending} onClick={() => void remove(row.id)}>
+                        <Button type="button" className="bg-danger text-danger-foreground" loading={pending} onClick={() => setDeleteTarget(row.id)}>
                           {common("delete")}
                         </Button>
                       </div>
@@ -1058,6 +1010,17 @@ function CollectionManager({mode}: {mode: "category" | "party"}) {
           </div>
         </Card>
       ) : null}
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title={common("delete")}
+        description={mode === "category" ? confirmT("deleteCategory") : confirmT("deleteParty")}
+        confirmLabel={common("delete")}
+        cancelLabel={common("cancel")}
+        variant="danger"
+        loading={pending}
+        onConfirm={() => void remove()}
+      />
     </div>
   );
 }

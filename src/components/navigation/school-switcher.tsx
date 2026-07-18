@@ -5,6 +5,7 @@ import {useTranslations} from "next-intl";
 
 import {useToast} from "@/components/shared/toast";
 import {Select} from "@/components/ui/select";
+import {requestSchoolSwitch} from "@/lib/auth/school-switch.client";
 import {usePortalSession} from "@/providers/auth-provider";
 
 export function SchoolSwitcher() {
@@ -30,22 +31,9 @@ export function SchoolSwitcher() {
         aria-label={t("label")}
         onChange={async (event) => {
           setPending(true);
-          const csrf = document.cookie
-            .split("; ")
-            .find((item) => item.startsWith("madrasti_csrf="))
-            ?.split("=")[1];
 
           try {
-            const response = await fetch("/api/auth/school/switch-school", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                ...(csrf ? {"X-CSRF-Token": decodeURIComponent(csrf)} : {}),
-              },
-              body: JSON.stringify({schoolId: event.target.value}),
-            });
-
-            if (!response.ok) {
+            if (!await requestSchoolSwitch(event.target.value)) {
               showToast("error", t("label"), t("failed"));
               return;
             }

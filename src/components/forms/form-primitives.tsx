@@ -19,6 +19,35 @@ export function FormField({children, className, ...props}: HTMLAttributes<HTMLDi
   );
 }
 
+/**
+ * A permanent, visible label for a single form control. Wrapping the control
+ * makes the label association work without relying on placeholders or IDs.
+ */
+export function FormControl({
+  label,
+  required,
+  description,
+  children,
+  className,
+}: {
+  label: ReactNode;
+  required?: boolean;
+  description?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <label className={cn("flex min-w-0 flex-col gap-2 text-sm font-medium text-foreground", className)}>
+      <span>
+        {label}
+        {required ? <span className="ms-1 text-danger" aria-hidden="true">*</span> : null}
+      </span>
+      {children}
+      {description ? <span className="text-sm font-normal text-muted-foreground">{description}</span> : null}
+    </label>
+  );
+}
+
 export function FormLabel({
   children,
   className,

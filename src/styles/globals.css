@@ -7,6 +7,9 @@
     color-scheme: light;
     --background: 248 250 252;
     --foreground: 15 23 42;
+    --surface: 255 255 255;
+    --surface-muted: 241 245 249;
+    --surface-elevated: 255 255 255;
     --card: 255 255 255;
     --card-foreground: 15 23 42;
     --popover: 255 255 255;
@@ -28,6 +31,10 @@
     --warning-foreground: 255 255 255;
     --danger: 185 28 28;
     --danger-foreground: 255 255 255;
+    --info: 3 105 161;
+    --info-foreground: 255 255 255;
+    --focus-ring: 11 37 69;
+    --overlay: 15 23 42;
     --sidebar: 11 37 69;
     --sidebar-foreground: 241 245 249;
     --sidebar-border: 44 67 91;
@@ -38,6 +45,9 @@
     color-scheme: dark;
     --background: 15 23 42;
     --foreground: 241 245 249;
+    --surface: 30 41 59;
+    --surface-muted: 51 65 85;
+    --surface-elevated: 30 41 59;
     --card: 30 41 59;
     --card-foreground: 241 245 249;
     --popover: 30 41 59;
@@ -59,6 +69,10 @@
     --warning-foreground: 69 26 3;
     --danger: 252 165 165;
     --danger-foreground: 69 10 10;
+    --info: 125 211 252;
+    --info-foreground: 8 47 73;
+    --focus-ring: 197 160 89;
+    --overlay: 2 6 23;
     --sidebar: 8 24 43;
     --sidebar-foreground: 241 245 249;
     --sidebar-border: 51 65 85;
@@ -88,7 +102,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid rgb(var(--ring));
+    outline: 2px solid rgb(var(--focus-ring));
     outline-offset: 2px;
   }
 
@@ -103,6 +117,24 @@
       scroll-behavior: auto !important;
       transition-duration: 0.01ms !important;
       animation-duration: 0.01ms !important;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    @keyframes dashboard-surface-enter {
+      from {
+        opacity: 0;
+        transform: translateY(0.25rem);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .motion-surface-enter {
+      animation: dashboard-surface-enter 160ms ease-out both;
     }
   }
 

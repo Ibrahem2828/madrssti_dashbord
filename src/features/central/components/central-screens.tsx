@@ -19,8 +19,11 @@ import {
   PaginationBar,
   SurfaceCard,
   HeaderCell as ProductHeaderCell,
+  StickyPageActions,
 } from "@/components/layout/product-framework";
+import {FormControl} from "@/components/forms/form-primitives";
 import {Button} from "@/components/ui/button";
+import {ConfirmDialog} from "@/components/ui/confirm-dialog";
 import {Input} from "@/components/ui/input";
 import {Textarea} from "@/components/ui/textarea";
 import {hasCapability} from "@/config/capabilities";
@@ -342,17 +345,13 @@ export function CentralSchoolsScreen() {
       <Can permission={CENTRAL_PERMISSIONS.schoolsCreate}>
         <Card title={t("createTitle")}>
           <form className="grid gap-3 md:grid-cols-2" onSubmit={(event) => void submit(event)}>
-            <Input value={form.name} onChange={(event) => setForm({...form, name: event.target.value})} placeholder={t("name")} required />
-            <Input value={form.code} onChange={(event) => setForm({...form, code: event.target.value})} placeholder={t("code")} required />
-            <Input value={form.phone} onChange={(event) => setForm({...form, phone: event.target.value})} placeholder={t("phone")} required />
-            <Input value={form.timezone} onChange={(event) => setForm({...form, timezone: event.target.value})} placeholder={t("timezone")} required />
+            <FormControl label={t("name")} required><Input value={form.name} onChange={(event) => setForm({...form, name: event.target.value})} placeholder={t("name")} required /></FormControl>
+            <FormControl label={t("code")} required><Input value={form.code} onChange={(event) => setForm({...form, code: event.target.value})} placeholder={t("code")} required /></FormControl>
+            <FormControl label={t("phone")} required><Input value={form.phone} onChange={(event) => setForm({...form, phone: event.target.value})} placeholder={t("phone")} required /></FormControl>
+            <FormControl label={t("timezone")} required><Input value={form.timezone} onChange={(event) => setForm({...form, timezone: event.target.value})} placeholder={t("timezone")} required /></FormControl>
+            <FormControl label={t("address")} required className="md:col-span-2"><Textarea value={form.address} onChange={(event) => setForm({...form, address: event.target.value})} placeholder={t("address")} required /></FormControl>
             <div className="md:col-span-2">
-              <Textarea value={form.address} onChange={(event) => setForm({...form, address: event.target.value})} placeholder={t("address")} required />
-            </div>
-            <div className="md:col-span-2">
-              <Button type="submit" loading={creating}>
-                {common("create")}
-              </Button>
+              <StickyPageActions><Button type="submit" loading={creating}>{common("create")}</Button></StickyPageActions>
             </div>
           </form>
         </Card>
@@ -415,6 +414,7 @@ export function CentralSchoolDetailScreen({schoolId}: {schoolId: string}) {
   const [editForm, setEditForm] = useState({name: "", code: "", phone: "", address: "", timezone: ""});
   const [adminForm, setAdminForm] = useState({fullName: "", email: "", phone: "", tempPassword: ""});
   const [resetForm, setResetForm] = useState({reason: "", newTempPassword: ""});
+  const [schoolAction, setSchoolAction] = useState<"activate" | "deactivate" | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -461,11 +461,6 @@ export function CentralSchoolDetailScreen({schoolId}: {schoolId: string}) {
   };
 
   const runAction = async (action: "activate" | "deactivate") => {
-    const confirmed = window.confirm(action === "activate" ? confirmT("activateSchool") : confirmT("deactivateSchool"));
-    if (!confirmed) {
-      return;
-    }
-
     setSaving(true);
     setMessage(null);
     const result =
@@ -532,30 +527,28 @@ export function CentralSchoolDetailScreen({schoolId}: {schoolId: string}) {
       {error ? <InlineError message={error} /> : null}
       <Card title={t("editTitle")}>
         <form className="grid gap-3 md:grid-cols-2" onSubmit={(event) => void saveSchool(event)}>
-          <Input value={editForm.name} onChange={(event) => setEditForm({...editForm, name: event.target.value})} placeholder={t("name")} required />
-          <Input value={editForm.code} onChange={(event) => setEditForm({...editForm, code: event.target.value})} placeholder={t("code")} required />
-          <Input value={editForm.phone} onChange={(event) => setEditForm({...editForm, phone: event.target.value})} placeholder={t("phone")} required />
-          <Input value={editForm.timezone} onChange={(event) => setEditForm({...editForm, timezone: event.target.value})} placeholder={t("timezone")} required />
-          <div className="md:col-span-2">
-            <Textarea value={editForm.address} onChange={(event) => setEditForm({...editForm, address: event.target.value})} placeholder={t("address")} required />
-          </div>
-          <div className="flex flex-wrap gap-3 md:col-span-2">
+          <FormControl label={t("name")} required><Input value={editForm.name} onChange={(event) => setEditForm({...editForm, name: event.target.value})} placeholder={t("name")} required /></FormControl>
+          <FormControl label={t("code")} required><Input value={editForm.code} onChange={(event) => setEditForm({...editForm, code: event.target.value})} placeholder={t("code")} required /></FormControl>
+          <FormControl label={t("phone")} required><Input value={editForm.phone} onChange={(event) => setEditForm({...editForm, phone: event.target.value})} placeholder={t("phone")} required /></FormControl>
+          <FormControl label={t("timezone")} required><Input value={editForm.timezone} onChange={(event) => setEditForm({...editForm, timezone: event.target.value})} placeholder={t("timezone")} required /></FormControl>
+          <FormControl label={t("address")} required className="md:col-span-2"><Textarea value={editForm.address} onChange={(event) => setEditForm({...editForm, address: event.target.value})} placeholder={t("address")} required /></FormControl>
+          <StickyPageActions className="md:col-span-2">
             <Can permission={CENTRAL_PERMISSIONS.schoolsUpdate}>
               <Button type="submit" loading={saving}>
                 {common("save")}
               </Button>
             </Can>
             <Can permission={CENTRAL_PERMISSIONS.schoolsActivateDeactivate}>
-              <Button type="button" onClick={() => void runAction("activate")} loading={saving}>
+              <Button type="button" onClick={() => setSchoolAction("activate")} loading={saving}>
                 {t("activate")}
               </Button>
             </Can>
             <Can permission={CENTRAL_PERMISSIONS.schoolsActivateDeactivate}>
-              <Button type="button" className="bg-danger text-danger-foreground" onClick={() => void runAction("deactivate")} loading={saving}>
+              <Button type="button" className="bg-danger text-danger-foreground" onClick={() => setSchoolAction("deactivate")} loading={saving}>
                 {t("deactivate")}
               </Button>
             </Can>
-          </div>
+          </StickyPageActions>
         </form>
       </Card>
       <Card title={t("adminState")}>
@@ -610,6 +603,22 @@ export function CentralSchoolDetailScreen({schoolId}: {schoolId: string}) {
           </Button>
         </Card>
       ) : null}
+      <ConfirmDialog
+        open={Boolean(schoolAction)}
+        onOpenChange={(open) => !open && setSchoolAction(null)}
+        title={schoolAction === "activate" ? t("activate") : t("deactivate")}
+        description={schoolAction === "activate" ? confirmT("activateSchool") : confirmT("deactivateSchool")}
+        confirmLabel={schoolAction === "activate" ? t("activate") : t("deactivate")}
+        cancelLabel={common("cancel")}
+        variant={schoolAction === "deactivate" ? "danger" : "primary"}
+        loading={saving}
+        onConfirm={() => {
+          if (!schoolAction) return;
+          const action = schoolAction;
+          setSchoolAction(null);
+          void runAction(action);
+        }}
+      />
     </div>
   );
 }

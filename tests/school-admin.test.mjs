@@ -154,6 +154,7 @@ test("school navigation exposes serializable document modules with explicit perm
 test("navigation is grouped, capability-aware, and does not render an empty group", () => {
   const types = read("src/config/navigation.types.ts");
   const shell = read("src/components/layout/portal-shell.tsx");
+  const navigation = read("src/lib/navigation/portal-navigation.ts");
   const schoolNavigation = read("src/config/navigation.school.ts");
 
   assert.match(types, /export type NavigationGroup/);
@@ -161,9 +162,11 @@ test("navigation is grouped, capability-aware, and does not render an empty grou
   assert.match(types, /permissionsAll\?: readonly string\[\]/);
   assert.match(schoolNavigation, /id: "correspondence"/);
   assert.match(schoolNavigation, /collapsible: true/);
-  assert.match(shell, /group\.items\.filter\(\(item\) => canAccess\(item, can\)\)/);
-  assert.match(shell, /\.filter\(\(group\) => group\.items\.length > 0\)/);
-  assert.match(shell, /hasCapability\(item\.capability\)/);
+  assert.match(shell, /filterNavigationForSession\(navigation, session\.permissions\)/);
+  assert.match(shell, /isNavigationItemActive\(pathname, item\)/);
+  assert.match(navigation, /group\.items\.filter\(\(item\) => isNavigationItemVisible\(item, permissions\)\)/);
+  assert.match(navigation, /\.filter\(\(group\) => group\.items\.length > 0\)/);
+  assert.match(navigation, /hasCapability\(item\.capability\)/);
 });
 
 test("attachment upload, preview, and download stay within the same-origin BFF", () => {
