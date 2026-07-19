@@ -587,6 +587,8 @@
     "schoolDashboard":  {
                             "title":  "School dashboard",
                             "description":  "Verified school summary using the real reports and dashboard endpoints.",
+                            "quickActions": "Quick actions",
+                            "recentActivity": "Recent document activity",
                             "students":  "Students",
                             "attendanceToday":  "Attendance today",
                             "ticketsOpen":  "Open tickets",

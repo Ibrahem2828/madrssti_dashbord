@@ -1,1 +1,5 @@
-export default function Loading(){return <div className="h-32 animate-pulse rounded-lg bg-muted"/>}
+import {DashboardRouteLoading} from "@/components/layout/product-framework";
+
+export default function Loading() {
+  return <DashboardRouteLoading />;
+}

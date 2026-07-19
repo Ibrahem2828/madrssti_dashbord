@@ -587,6 +587,8 @@
     "schoolDashboard":  {
                             "title":  "لوحة تحكم المدرسة",
                             "description":  "ملخص المدرسة المعتمد باستخدام نقاط نهاية التقارير ولوحة التحكم الحقيقية.",
+                            "quickActions": "إجراءات سريعة",
+                            "recentActivity": "أحدث نشاطات الوثائق",
                             "students":  "الطلاب",
                             "attendanceToday":  "حضور اليوم",
                             "ticketsOpen":  "التذاكر المفتوحة",

@@ -83,6 +83,19 @@ export function MetricGrid({children}: {children: ReactNode}) {
   return <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">{children}</div>;
 }
 
+/** A consistent, permission-safe container for contextual navigation and create actions. */
+export function QuickActionGrid({children}: {children: ReactNode}) {
+  return <div className="grid gap-3 sm:grid-cols-2">{children}</div>;
+}
+
+/**
+ * The interactive control is supplied by the caller so locale-aware links and
+ * permission-aware buttons keep their native semantics.
+ */
+export function QuickActionCard({children, className}: {children: ReactNode; className?: string}) {
+  return <div className={cn("rounded-xl border bg-background p-1 transition-colors hover:border-primary/30 hover:bg-muted/45", className)}>{children}</div>;
+}
+
 export function MetricCard({
   label,
   value,
@@ -321,5 +334,24 @@ export function LoadingCard({lines = 3}: {lines?: number}) {
         ))}
       </div>
     </div>
+  );
+}
+
+/** Shared route-level placeholder that mirrors the dashboard information hierarchy. */
+export function DashboardRouteLoading() {
+  return (
+    <PageStack aria-busy="true" aria-label="Loading">
+      <div className="space-y-3">
+        <Skeleton className="h-8 w-56" />
+        <Skeleton className="h-4 w-full max-w-2xl" />
+      </div>
+      <MetricGrid>
+        {Array.from({length: 4}).map((_, index) => <LoadingCard key={index} lines={2} />)}
+      </MetricGrid>
+      <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
+        <LoadingCard lines={5} />
+        <LoadingCard lines={4} />
+      </div>
+    </PageStack>
   );
 }

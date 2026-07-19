@@ -6,15 +6,17 @@ import {useTranslations} from "next-intl";
 import {ErrorState, ForbiddenState, UnavailableState, UnsupportedState} from "@/components/feedback/states";
 import {hasCapability} from "@/config/capabilities";
 import {SCHOOL_PERMISSIONS} from "@/config/permissions";
+import {Link} from "@/i18n/routing";
 import {statusTranslationKeys, translateEnum} from "@/lib/presentation/domain-enums";
 import {usePortalSession} from "@/providers/auth-provider";
 import {fetchDocumentOverview, fetchSchoolKpis, fetchSchoolOverview} from "../services/school-api";
-import {Card, LoadingBlock, MetricCard, PageHeader} from "./common";
+import {ActivityFeed, Card, LoadingBlock, MetricCard, MetricGrid, PageHeader, PageStack, QuickActionCard, QuickActionGrid} from "./common";
 import type {SchoolDashboardKpis, SchoolDashboardOverview, SchoolDocumentOverview} from "../types/contracts";
 
 export function SchoolDashboardScreen() {
   const t = useTranslations("schoolDashboard");
   const common = useTranslations("common");
+  const navigation = useTranslations("navigation");
   const statusT = useTranslations("status");
   const access = usePortalSession();
   const [overview, setOverview] = useState<SchoolDashboardOverview | null>(null);
@@ -24,6 +26,12 @@ export function SchoolDashboardScreen() {
   const [failure, setFailure] = useState<{code: string; requestId?: string} | null>(null);
   const canViewDashboard = access.can(SCHOOL_PERMISSIONS.dashboardView);
   const isPrincipal = access.session.roles.some((role) => role.trim().toUpperCase() === "PRINCIPAL");
+  const quickActions = [
+    access.can(SCHOOL_PERMISSIONS.usersRead) ? {href: "/school/users", label: navigation("users")} : null,
+    access.can(SCHOOL_PERMISSIONS.attendanceRead) ? {href: "/school/attendance", label: navigation("attendance")} : null,
+    access.can(SCHOOL_PERMISSIONS.documentsRead) ? {href: "/school/correspondence", label: navigation("correspondenceOverview")} : null,
+    access.can(SCHOOL_PERMISSIONS.ticketsView) ? {href: "/school/tickets", label: navigation("tickets")} : null,
+  ].filter((item): item is {href: string; label: string} => item !== null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -102,14 +110,27 @@ export function SchoolDashboardScreen() {
   }
 
   return (
-    <div className="space-y-6">
+    <PageStack className="motion-surface-enter">
       <PageHeader title={t("title")} description={t("description")} />
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <MetricGrid>
         <MetricCard label={t("students")} value={overview.students} />
         <MetricCard label={t("attendanceToday")} value={overview.attendanceToday} />
         <MetricCard label={t("ticketsOpen")} value={overview.ticketsOpen} />
         <MetricCard label={t("behaviorNotes")} value={overview.behaviorNotes} />
-      </div>
+      </MetricGrid>
+      {quickActions.length > 0 ? (
+        <Card title={t("quickActions")}>
+          <QuickActionGrid>
+            {quickActions.map((action) => (
+              <QuickActionCard key={action.href}>
+                <Link href={action.href} className="flex min-h-16 items-center rounded-lg px-4 py-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  {action.label}
+                </Link>
+              </QuickActionCard>
+            ))}
+          </QuickActionGrid>
+        </Card>
+      ) : null}
       <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
         <Card title={t("kpisTitle")}>
           <div className="grid gap-3 md:grid-cols-2">
@@ -134,6 +155,18 @@ export function SchoolDashboardScreen() {
           )}
         </Card>
       </div>
-    </div>
+      {documents?.recentActivity.length ? (
+        <Card title={t("recentActivity")}>
+          <ActivityFeed
+            items={documents.recentActivity.map((activity) => ({
+              id: `${activity.documentId}:${activity.createdAt}:${activity.action}`,
+              title: activity.title,
+              description: activity.action,
+              meta: activity.createdAt,
+            }))}
+          />
+        </Card>
+      ) : null}
+    </PageStack>
   );
 }

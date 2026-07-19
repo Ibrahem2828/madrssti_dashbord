@@ -15,8 +15,12 @@ import {
   LoadingCard,
   MetadataList,
   MetricCard as ProductMetricCard,
+  MetricGrid,
   PageHeader as ProductPageHeader,
+  PageStack,
   PaginationBar,
+  QuickActionCard,
+  QuickActionGrid,
   SurfaceCard,
   HeaderCell as ProductHeaderCell,
   StickyPageActions,
@@ -76,6 +80,7 @@ export function CentralDashboardScreen() {
   const t = useTranslations("central");
   const common = useTranslations("common");
   const statusT = useTranslations("status");
+  const access = usePortalSession();
   const [overview, setOverview] = useState<CentralDashboardOverview | null>(null);
   const [health, setHealth] = useState<CentralSchoolHealth[]>([]);
   const [loading, setLoading] = useState(true);
@@ -117,23 +122,25 @@ export function CentralDashboardScreen() {
   }
 
   return (
-    <div className="space-y-6">
+    <PageStack className="motion-surface-enter">
       <PageHeader title={t("dashboardTitle")} description={t("dashboardDescription")} />
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <MetricGrid>
         <MetricCard label={t("schoolsTotal")} value={overview.schoolsTotal} />
         <MetricCard label={t("schoolsActive")} value={overview.schoolsActive} />
         <MetricCard label={t("ticketsOpen")} value={overview.ticketsOpen} />
         <MetricCard label={t("usersTotal")} value={overview.usersTotal} />
-      </div>
+      </MetricGrid>
       <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
-        <Card title={t("quickLinks")}>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <QuickLink href="/central/schools" label={t("schoolsTitle")} />
-            <QuickLink href="/central/health" label={t("healthTitle")} />
-            <QuickLink href="/central/tickets" label={t("ticketsTitle")} />
-            <QuickLink href="/central/policies" label={t("policiesTitle")} />
-          </div>
-        </Card>
+        {access.loading ? null : (
+          <Card title={t("quickLinks")}>
+            <QuickActionGrid>
+              <Can permission={CENTRAL_PERMISSIONS.schoolsRead}><QuickLink href="/central/schools" label={t("schoolsTitle")} /></Can>
+              <Can permission={CENTRAL_PERMISSIONS.schoolsHealthView}><QuickLink href="/central/health" label={t("healthTitle")} /></Can>
+              <Can permission={CENTRAL_PERMISSIONS.ticketsRead}><QuickLink href="/central/tickets" label={t("ticketsTitle")} /></Can>
+              <Can permission={CENTRAL_PERMISSIONS.policiesRead}><QuickLink href="/central/policies" label={t("policiesTitle")} /></Can>
+            </QuickActionGrid>
+          </Card>
+        )}
         <Card title={t("systemStatus")}>
           <p className="text-sm text-muted-foreground">{statusLabel(overview.systemStatus) || t("unknownStatus")}</p>
           <div className="mt-4 space-y-3">
@@ -151,7 +158,7 @@ export function CentralDashboardScreen() {
           </div>
         </Card>
       </div>
-    </div>
+    </PageStack>
   );
 }
 
@@ -1307,9 +1314,11 @@ function MetricCard({label, value}: {label: string; value: string | number}) {
 
 function QuickLink({href, label}: {href: string; label: string}) {
   return (
-    <Link href={href} className="rounded-md border p-4 text-sm font-medium transition-colors hover:bg-muted">
-      {label}
-    </Link>
+    <QuickActionCard>
+      <Link href={href} className="flex min-h-16 items-center rounded-lg px-4 py-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        {label}
+      </Link>
+    </QuickActionCard>
   );
 }
 
